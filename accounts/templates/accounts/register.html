@@ -1,0 +1,37 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h3 class="text-center mb-4">Регистрация</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small class="text-muted d-block" style="font-size: 0.8em;">{{ field.help_text }}</small>
+                            {% endif %}
+                            {% if field.errors %}
+                                <small class="text-danger">{{ field.errors.0 }}</small>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    
+                    <button type="submit" class="btn btn-success w-100">Создать аккаунт</button>
+                </form>
+                <div class="text-center mt-3">
+                    <a href="{% url 'login' %}">Уже есть аккаунт? Войти</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var inputs = document.querySelectorAll('input');
+    inputs.forEach(input => input.classList.add('form-control'));
+</script>
+{% endblock %}

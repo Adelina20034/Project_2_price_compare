@@ -1,0 +1,38 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h3 class="text-center mb-4">Вход</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <!-- Простой вывод формы Bootstrap -->
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ field.label }}</label>
+                            {{ field }} <!-- Поля ввода -->
+                            {% if field.errors %}
+                                <small class="text-danger">{{ field.errors.0 }}</small>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    
+                    <button type="submit" class="btn btn-primary w-100">Войти</button>
+                </form>
+                <div class="text-center mt-3">
+                    <a href="{% url 'register' %}">Нет аккаунта? Зарегистрироваться</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Стили для полей Django, чтобы они были красивыми -->
+<script>
+    // Добавляем класс form-control ко всем инпутам
+    var inputs = document.querySelectorAll('input');
+    inputs.forEach(input => input.classList.add('form-control'));
+</script>
+{% endblock %}

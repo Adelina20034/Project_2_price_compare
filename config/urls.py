@@ -20,4 +20,5 @@ from django.urls import path, include  # <-- Добавьте include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('catalog.urls')),  # <-- Это сделает каталог главной страницей
+    path('accounts/', include('accounts.urls')), #регистрация
 ]
