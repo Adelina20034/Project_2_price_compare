@@ -1,0 +1,39 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            Товар
+        </div>
+        <div class="card-body">
+            <h2 class="card-title">{{ product.name }}</h2>
+            <p class="text-muted">Категория: {{ product.category }}</p>
+
+            <h4 class="mt-4">Сравнение цен:</h4>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Магазин</th>
+                        <th>Цена</th>
+                        <th>Дата обновления</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for price in prices %}
+                        <tr>
+                            <td>{{ price.store.name }}</td>
+                            <td class="fw-bold text-success">{{ price.price }} ₽</td>
+                            <td>{{ price.date|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">Цен пока нет (запустите парсер!)</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <a href="{% url 'product_list' %}" class="btn btn-secondary mt-3">← Назад к поиску</a>
+        </div>
+    </div>
+{% endblock %}

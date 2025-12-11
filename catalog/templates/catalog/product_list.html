@@ -1,0 +1,108 @@
+{% extends 'catalog/base.html' %}
+
+{% block title %}Поиск {{ query }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <h1 class="text-center mb-4">🔍 Поиск: "{{ query }}"</h1>
+        
+        <!-- Форма поиска -->
+        <form method="get" class="row g-3 mb-5">
+            <div class="col-md-9">
+                <input type="text" name="q" class="form-control form-control-lg" 
+                       placeholder="Введите название (молоко, хлеб...)" value="{{ query }}" required>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-lg w-100">🔎 Найти цены</button>
+            </div>
+        </form>
+
+        {% if matches %}
+            <!-- БЛОК 1: СОВПАДЕНИЯ (ПАРЫ) -->
+            {% for match in matches %}
+                {% if match.pyaterochka and match.magnit %}
+                    <div class="card mb-4 shadow-sm border-primary">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <strong>✅ Найдено в обоих магазинах</strong>
+                            <span class="badge bg-secondary">Сходство {{ match.similarity }}%</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <!-- Пятёрочка -->
+                                <div class="col-md-5 text-center border-end">
+                                    <h5 class="text-primary mb-1">Пятёрочка</h5>
+                                    <h6 class="card-title my-2">{{ match.pyaterochka.name }}</h6>
+                                    <span class="badge bg-primary fs-5">{{ match.pyaterochka.price }} ₽</span>
+                                    {% if match.cheaper_in == 'Пятёрочка' %}
+                                        <div class="mt-2 text-success fw-bold small">🔥 Лучшая цена</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- VS -->
+                                <div class="col-md-2 text-center py-3">
+                                    <div class="fs-4 fw-bold text-muted">VS</div>
+                                </div>
+                                
+                                <!-- Магнит -->
+                                <div class="col-md-5 text-center">
+                                    <h5 class="text-danger mb-1">Магнит</h5>
+                                    <h6 class="card-title my-2">{{ match.magnit.name }}</h6>
+                                    <span class="badge bg-danger fs-5">{{ match.magnit.price }} ₽</span>
+                                    {% if match.cheaper_in == 'Магнит' %}
+                                        <div class="mt-2 text-success fw-bold small">🔥 Лучшая цена</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if match.saving > 0 %}
+                                <div class="alert alert-success mt-3 mb-0 text-center py-2">
+                                    Экономия: <strong>{{ match.saving }} ₽</strong>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <!-- БЛОК 2: ОДИНОЧНЫЕ ТОВАРЫ -->
+            <h4 class="mt-5 mb-3 text-muted">Другие найденные товары</h4>
+            <div class="row">
+                {% for match in matches %}
+                    {% if not match.pyaterochka or not match.magnit %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 {% if match.pyaterochka %}border-primary{% else %}border-danger{% endif %} shadow-sm">
+                                <div class="card-body">
+                                    {% if match.pyaterochka %}
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <span class="badge bg-primary mb-2">Только в Пятёрочке</span>
+                                                <h6 class="card-title">{{ match.pyaterochka.name }}</h6>
+                                            </div>
+                                            <span class="fs-5 fw-bold text-primary text-nowrap ms-2">{{ match.pyaterochka.price }} ₽</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <span class="badge bg-danger mb-2">Только в Магните</span>
+                                                <h6 class="card-title">{{ match.magnit.name }}</h6>
+                                            </div>
+                                            <span class="fs-5 fw-bold text-danger text-nowrap ms-2">{{ match.magnit.price }} ₽</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+        {% elif query %}
+            <div class="alert alert-warning text-center p-5">
+                <h4>😔 Ничего не найдено</h4>
+                <p class="mb-0">Попробуйте изменить запрос</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
