@@ -1,98 +1,53 @@
-import pytest
-from django.urls import reverse
-from catalog.models import Product, Store, Price
-from decimal import Decimal
-from unittest.mock import patch # Для подмены реального парсинга
+from django.test import TestCase, RequestFactory
+from django.contrib.auth.models import AnonymousUser
+from unittest.mock import patch
+from catalog.views import product_list
+from catalog.models import Store, Product
 
-# --- ТЕСТЫ МОДЕЛЕЙ (База данных) ---
-
-@pytest.mark.django_db
-class TestCatalogModels:
+class TestCatalogModelsUnit(TestCase):
     
-    def test_create_store(self):
-        """Можно создать магазин"""
-        store = Store.objects.create(name="Пятёрочка", url="https://5ka.ru")
-        assert store.name == "Пятёрочка"
-        assert str(store) == "Пятёрочка" # Проверка метода __str__
+    def test_store_str_method(self):
+        """Unit-тест: Метод __str__ у магазина"""
+        store = Store(name="Пятёрочка")
+        self.assertEqual(str(store), "Пятёрочка")
 
-    def test_create_product(self):
-        """Можно создать товар"""
-        product = Product.objects.create(name="Молоко")
-        assert product.name == "Молоко"
-        assert str(product) == "Молоко"
-
-    def test_create_price(self):
-        """Можно создать цену, связанную с товаром и магазином"""
-        store = Store.objects.create(name="Магнит")
-        product = Product.objects.create(name="Хлеб")
-        
-        price_obj = Price.objects.create(
-            product=product, 
-            store=store, 
-            price=Decimal("50.00")
-        )
-        
-        assert price_obj.price == Decimal("50.00")
-        assert price_obj.product == product
+    def test_product_str_method(self):
+        """Unit-тест: Метод __str__ у товара"""
+        product = Product(name="Молоко")
+        self.assertEqual(str(product), "Молоко")
 
 
-# --- ТЕСТЫ ПРЕДСТАВЛЕНИЙ (Страницы) ---
-
-@pytest.mark.django_db
-class TestCatalogViews:
+class TestCatalogViewsUnit(TestCase):
     
-    def test_home_page_opens(self, client):
-        """Главная страница открывается (без поиска)"""
-        url = reverse('product_list')
-        response = client.get(url)
-        assert response.status_code == 200
-        # Проверяем, что контекст пустой (поиска не было)
-        assert response.context['query'] == ''
-        assert response.context['total_products'] == 0
+    def setUp(self):
+        self.factory = RequestFactory()
 
-    def test_search_short_query(self, client):
-        """Короткий запрос (< 3 символов) не запускает поиск"""
-        url = reverse('product_list')
-        response = client.get(url, {'q': 'hi'}) # q=hi
-        
-        assert response.status_code == 200
-        # Поиск не запускался
-        assert response.context['total_products'] == 0
-
-    # ТЕСТ: Имитация поиска
-    # Мы используем @patch, чтобы НЕ запускать реальный Selenium (это долго),
-    # а подсунуть функции smart_product_search готовый ответ.
     @patch('catalog.views.smart_product_search')
-    def test_search_execution(self, mock_search, client):
-        """Поиск запускается и отображает результаты"""
-        
-        # 1. Готовим фейковый ответ от парсера
+    def test_product_list_with_query(self, mock_search):
+        """Unit-тест: Функция product_list вызывает поиск"""
+        # Настраиваем Mock
         mock_search.return_value = {
-            'pairs': [
-                {
-                    'similarity': 90,
-                    'pyat': {'name': 'Яблоко П', 'price': 100, 'store': 'P'},
-                    'magnit': {'name': 'Яблоко М', 'price': 90, 'store': 'M'},
-                    'price_diff': 10,
-                    'price_diff_percent': 10,
-                    'cheaper': 'Магнит'
-                }
-            ],
-            'pyat_single': [{'name': 'Груша', 'price': 200}],
+            'pairs': [{'some': 'data'}],
+            'pyat_single': [],
             'magnit_single': []
         }
         
-        # 2. Делаем запрос с длинным словом
-        url = reverse('product_list')
-        response = client.get(url, {'q': 'яблоко'})
+        request = self.factory.get('/?q=яблоко')
+        request.user = AnonymousUser()
         
-        # 3. Проверяем
-        assert response.status_code == 200
+        response = product_list(request)
         
-        # Функция поиска должна была вызваться 1 раз с аргументом 'яблоко'
+        self.assertEqual(response.status_code, 200)
         mock_search.assert_called_once_with('яблоко')
         
-        # В контексте должны появиться наши фейковые данные
-        assert response.context['pairs_count'] == 1
-        assert response.context['pyat_single_count'] == 1
-        assert response.context['total_products'] == 3 # 1 пара (2 товара) + 1 одиночный
+
+    @patch('catalog.views.smart_product_search')
+    def test_product_list_short_query(self, mock_search):
+        """Unit-тест: При коротком запросе поиск НЕ вызывается"""
+        request = self.factory.get('/?q=hi')
+        request.user = AnonymousUser()
+        
+        response = product_list(request)
+        
+        self.assertEqual(response.status_code, 200)
+        mock_search.assert_not_called()

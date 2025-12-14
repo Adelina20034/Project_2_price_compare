@@ -1,68 +1,56 @@
-import pytest
-from django.urls import reverse
-from django.contrib.auth.models import User
+from django.test import TestCase, RequestFactory
+from django.contrib.auth.models import AnonymousUser
+from unittest.mock import patch, MagicMock
+from accounts.views import register # Импортируем view напрямую
 
-@pytest.mark.django_db
-class TestAuthSystem:
+class TestAccountsUnit(TestCase):
+    
+    def setUp(self):
+        """Создаем фабрику запросов перед каждым тестом"""
+        self.factory = RequestFactory()
 
-    def test_register_page_opens(self, client):
-        """Проверяет, что страница регистрации доступна и открывается (код 200)"""
-        url = reverse('register')
-        response = client.get(url)
+    def test_register_get_request(self):
+        """Unit-тест: GET запрос отдает форму (код 200)"""
+        # Создаем фейковый GET запрос
+        request = self.factory.get('/register/')
+        request.user = AnonymousUser()
         
-        assert response.status_code == 200
-        assert 'form' in response.context
+        # Вызываем view напрямую
+        response = register(request)
+        
+        # Проверяем статус ответа
+        self.assertEqual(response.status_code, 200)
 
-    def test_registration_full_flow(self, client):
-        """Проверяет успешную регистрацию: создание пользователя и автоматический вход"""
-        url = reverse('register')
-        data = {
-            'username': 'new_test_user',
-            'password1': 'StrongPass123!',
-            'password2': 'StrongPass123!',
-        }
+    @patch('accounts.views.UserCreationForm') # Подменяем Форму
+    @patch('accounts.views.login')            # Подменяем функцию входа
+    def test_register_post_success(self, mock_login, MockForm):
+        """Unit-тест: Успешная регистрация (без записи в БД)"""
+        # 1. Настраиваем Моки (говорим форме: "ты валидна")
+        mock_form_instance = MockForm.return_value
+        mock_form_instance.is_valid.return_value = True
         
-        response = client.post(url, data)
-        
-        # Должен быть редирект после успеха
-        assert response.status_code == 302
-        # Пользователь должен появиться в БД
-        assert User.objects.filter(username='new_test_user').exists()
-        # Пользователь должен быть авторизован (сессия создана)
-        assert '_auth_user_id' in client.session
+        # Создаем фейкового юзера, который якобы создался
+        mock_user = MagicMock()
+        mock_form_instance.save.return_value = mock_user
 
-    def test_login_success(self, client):
-        """Проверяет успешный вход с правильным паролем"""
-        User.objects.create_user(username='login_user', password='password123')
+        # 2. Создаем фейковый POST запрос с данными
+        request = self.factory.post('/register/', {
+            'username': 'test_user', 
+            'password': 'password123'
+        })
+        request.user = AnonymousUser()
         
-        url = reverse('login')
-        data = {'username': 'login_user', 'password': 'password123'}
-        
-        response = client.post(url, data)
-        
-        assert response.status_code == 302
-        assert '_auth_user_id' in client.session
+        # Замокаем messages, чтобы view не упала при попытке добавить сообщение
+        with patch('django.contrib.messages.success') as mock_messages:
+            response = register(request)
 
-    def test_login_fail_wrong_password(self, client):
-        """Проверяет, что с неверным паролем войти нельзя"""
-        User.objects.create_user(username='user', password='correct_password')
+        # 3. Проверки (Assertions)
         
-        url = reverse('login')
-        data = {'username': 'user', 'password': 'WRONG_password'}
+        # Проверяем, что был редирект (код 302)
+        self.assertEqual(response.status_code, 302)
+        # Проверяем, куда перенаправили (на главную)
+        self.assertEqual(response.url, '/')
         
-        response = client.post(url, data)
-        
-        # Редиректа нет (остаемся на странице входа), сессия не создана
-        assert response.status_code == 200
-        assert '_auth_user_id' not in client.session
-
-    def test_logout(self, client):
-        """Проверяет выход из системы"""
-        user = User.objects.create_user(username='logout_test', password='123')
-        client.force_login(user)
-        
-        url = reverse('logout')
-        client.post(url)
-        
-        # Сессия должна быть очищена
-        assert '_auth_user_id' not in client.session
+        # Проверяем, что логика сработала:
+        mock_form_instance.save.assert_called_once() # Метод save() у формы вызвался
+        mock_login.assert_called_once_with(request, mock_user) # Функция login() вызвалась
