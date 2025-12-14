@@ -9,7 +9,7 @@ class StoreAdmin(admin.ModelAdmin):
 # Регистрация Товара
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category')
+    list_display = ('name',)
     search_fields = ('name',)       # Добавляем строку поиска
 
 # Регистрация Цены

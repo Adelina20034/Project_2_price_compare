@@ -9,8 +9,8 @@ class Store(models.Model):
 
 class Product(models.Model):
     name = models.CharField("Название", max_length=255)
-    category = models.CharField("Категория", max_length=100, blank=True)
-    image_url = models.URLField("Картинка", blank=True)
+    # category = models.CharField("Категория", max_length=100, blank=True)
+    # image_url = models.URLField("Картинка", blank=True)
 
     def __str__(self):
         return self.name
