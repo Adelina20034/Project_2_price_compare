@@ -6,7 +6,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from urllib.parse import quote
 from fuzzywuzzy import fuzz
@@ -174,11 +173,11 @@ class PyaterochkaParser(BaseParser):
         try:
             price = Decimal(f"{rubles}.{kopecks}")
             return price
-        except:
+        except Exception:
             return None
 
     def scrape_search(self, query):
-        print(f"🟦 Старт парсинга Пятёрочки...")
+        print("🟦 Старт парсинга Пятёрочки...")
 
         try:
             encoded_query = quote(query, safe='')
@@ -194,7 +193,7 @@ class PyaterochkaParser(BaseParser):
                     )
                 )
                 print("✅ Товары загружены")
-            except:
+            except Exception:
                 print("❌ Товары не найдены")
                 return []
 
@@ -309,11 +308,11 @@ class MagnitParser(BaseParser):
         try:
             price = Decimal(price_str)
             return price
-        except:
+        except Exception:
             return None
 
     def scrape_search(self, query):
-        print(f"🟥 Старт парсинга Магнита...")
+        print("🟥 Старт парсинга Магнита...")
         current_page = 1
 
         try:
@@ -361,7 +360,7 @@ class MagnitParser(BaseParser):
             try:
                 name = self.extract_product_name(elem)
                 if not name:
-                    print(f"  ⚠️ Название не найдено")
+                    print("  ⚠️ Название не найдено")
                     continue
 
                 price = self.extract_product_price(elem)
