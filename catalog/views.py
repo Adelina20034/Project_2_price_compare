@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from .models import Product, Price
 from scraping.scrapers import smart_product_search
 
 
