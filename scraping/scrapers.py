@@ -12,7 +12,7 @@ from fuzzywuzzy import fuzz
 from decimal import Decimal
 import re
 import time
-from catalog.models import Product, Price, Store
+from catalog.models import Product, Category
 
 
 def get_driver():
@@ -36,25 +36,18 @@ def smart_product_search(query):
     """Основная функция поиска"""
     print(f"🔍 Запуск умного поиска: '{query}'")
 
-    # Создаем магазины в БД, если нет
-    pyaterochka, _ = Store.objects.get_or_create(name="Пятёрочка")
-    magnit, _ = Store.objects.get_or_create(name="Магнит")
-
     driver = get_driver()
     try:
         # 1. Парсим Пятёрочку
-        pyat_parser = PyaterochkaParser(pyaterochka, driver)
+        pyat_parser = PyaterochkaParser(driver)
         pyat_products = pyat_parser.scrape_search(query)
 
         # 2. Парсим Магнит
-        magnit_parser = MagnitParser(magnit, driver)
+        magnit_parser = MagnitParser(driver)
         magnit_products = magnit_parser.scrape_search(query)
 
         # 3. Сопоставляем результаты
         result = smart_compare_products(pyat_products, magnit_products)
-
-        # 4. Сохраняем в БД для отображения на сайте
-        # save_results_to_db(matches)
         return result
     finally:
         driver.quit()
@@ -62,8 +55,7 @@ def smart_product_search(query):
 
 
 class BaseParser(ABC):
-    def __init__(self, store, driver):
-        self.store = store
+    def __init__(self, driver):
         self.driver = driver
         self.products = []
 
@@ -88,7 +80,6 @@ class BaseParser(ABC):
             product_dict = {
                 'name': name,
                 'price': price,
-                'store': self.store,
                 'page': page
             }
             self.products.append(product_dict)
@@ -435,26 +426,12 @@ def smart_compare_products(
         # Если нашли хорошую пару
         if best_match and best_similarity >= similarity_threshold:
 
-            # Вычисляем разницу цен
-            price_diff = abs(pyat_prod['price'] - best_match['price'])
-            price_diff_percent = (
-                price_diff / min(pyat_prod['price'], best_match['price'])) * 100
-
-            # Определяем, где дешевле
-            if pyat_prod['price'] < best_match['price']:
-                cheaper = 'Пятёрочка'
-            elif pyat_prod['price'] > best_match['price']:
-                cheaper = 'Магнит'
-            else:
-                cheaper = 'Одинаково'
-
             pairs.append({
                 'similarity': best_similarity,
                 'pyat': pyat_prod,
+                'price_pyat': pyat_prod['price'],
                 'magnit': best_match,
-                'price_diff': float(price_diff),
-                'price_diff_percent': float(price_diff_percent),
-                'cheaper': cheaper
+                'price_mag': best_match['price'],
             })
 
             # Отмечаем как использованные
@@ -493,38 +470,140 @@ def smart_compare_products(
     }
 
 
-def save_results_to_db(matches):
+def save_results_to_db(res, query):
     """
-    Сохраняет результаты парсинга в базу данных (Product, Price)
+    Сохраняет результаты парсинга в базу данных (Product)
     """
     from django.utils import timezone
+    category: Category
+    category = Category.objects.get(name=query.capitalize())
 
-    # Проходим по всем результатам (пары и одиночные)
-    for match in matches:
-        # Список магазинов в текущем match
-        items_to_save = []
+    stats = {
+        'created': 0,
+        'updated': 0,
+        'errors': 0
+    }
+    print("📊 ПАРНЫЕ ТОВАРЫ (в обоих магазинах)")
 
-        if match.get('pyaterochka'):
-            items_to_save.append(match['pyaterochka'])
-
-        if match.get('magnit'):
-            items_to_save.append(match['magnit'])
-
-        for item in items_to_save:
+    for pair in res.get('pairs', []):
+        try:
+            name_pyat = pair.get('pyat').get('name')
+            name_mag = pair.get('magnit').get('name')
+            price_pyat = pair.get('price_pyat')
+            price_mag = pair.get('price_mag')
             try:
-                # 1. Создаем или получаем товар
-                # Используем update_or_create, чтобы не дублировать
+                product = Product.objects.get(
+                    name_pyat=name_pyat,
+                    name_mag=name_mag,
+                )
+                print(f"✓ Найдено: {name_pyat} / {name_mag}")
+
+                price_pyat_changed = product.price_pyat != price_pyat
+                price_mag_changed = product.price_mag != price_mag
+
+                if price_pyat_changed:
+                    product.price_pyat = price_pyat
+
+                if price_mag_changed:
+                    product.price_mag = price_mag
+
+                if price_pyat_changed or price_mag_changed:
+                    product.save()
+                    stats['updated'] += 1
+
+            except Product.DoesNotExist:
                 product, _ = Product.objects.get_or_create(
-                    name=item['name'],
-                    defaults={'category': 'Найденное'}
+                    name_pyat=pair['pyat']['name'],
+                    price_pyat=pair['price_pyat'],
+                    name_mag=pair['magnit']['name'],
+                    price_mag=pair['price_mag'],
+                    similarity=pair['similarity'],
+                    created_at=timezone.now()
+                )
+                stats['created'] += 1
+                print(f"✨ НОВЫЙ (пара): {name_pyat} / {name_mag}")
+
+            if not product.categories.filter(id=category.id).exists():
+                product.categories.add(category)
+                stats['categories_added'] += 1
+                print(f"   ✅ Добавлено в категорию '{category.name}'")
+
+        except Exception as e:
+            stats['errors'] += 1
+            print(f"Ошибка сохранения в БД: {e}")
+
+    print("\n🏪 ТОВАРЫ ТОЛЬКО В ПЯТЁРОЧКЕ")
+    for item in res.get('pyat_single', []):
+        try:
+            name_pyat = item.get('name')
+            price_pyat = item.get('price')
+            try:
+                product = Product.objects.get(
+                    name_pyat=name_pyat,
+                    name_mag__isnull=True,
                 )
 
-                # 2. Сохраняем цену
-                Price.objects.create(
-                    product=product,
-                    store=item['store'],
-                    price=item['price'],
-                    date=timezone.now()
+                if product.price_pyat != price_pyat:
+                    product.price_pyat = price_pyat
+                    product.save()
+                    stats['updated'] += 1
+
+            except Product.DoesNotExist:
+                product, _ = Product.objects.get_or_create(
+                    name_pyat=name_pyat,
+                    price_pyat=price_pyat,
+                    name_mag=None,
+                    price_mag=None,
+                    created_at=timezone.now()
                 )
-            except Exception as e:
-                print(f"Ошибка сохранения в БД: {e}")
+                stats['created'] += 1
+                print(f"✨ НОВЫЙ (пятерочка): {name_pyat}")
+
+            if not product.categories.filter(id=category.id).exists():
+                product.categories.add(category)
+                stats['categories_added'] += 1
+                print(f"   ✅ Добавлено в категорию '{category.name}'")
+
+        except Exception as e:
+            stats['errors'] += 1
+            print(f"Ошибка сохранения в БД: {e}")
+
+    print("\n🏪 ТОВАРЫ ТОЛЬКО В МАГНИТЕ")
+    for item in res.get('magnit_single', []):
+        try:
+            name_mag = item.get('name')
+            price_mag = item.get('price')
+            try:
+                product = Product.objects.get(
+                    name_pyat__isnull=True,
+                    name_mag=name_mag,
+                )
+
+                if product.price_mag != price_mag:
+                    product.price_mag = price_mag
+                    product.save()
+                    stats['updated'] += 1
+
+            except Product.DoesNotExist:
+                product, _ = Product.objects.get_or_create(
+                    name_pyat=None,
+                    price_pyat=None,
+                    name_mag=name_mag,
+                    price_mag=price_mag,
+                    created_at=timezone.now()
+                )
+                stats['created'] += 1
+                print(f"✨ НОВЫЙ (магнит): {name_mag}")
+
+            if not product.categories.filter(id=category.id).exists():
+                product.categories.add(category)
+                stats['categories_added'] += 1
+                print(f"   ✅ Добавлено в категорию '{category.name}'")
+
+        except Exception as e:
+            stats['errors'] += 1
+            print(f"Ошибка сохранения в БД: {e}")
+
+    print(f"✨ Создано новых: {stats['created']}")
+    print(f"🔄 Обновлено: {stats['updated']}")
+    print(f"❌ Ошибок: {stats['errors']}")

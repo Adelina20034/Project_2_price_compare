@@ -280,15 +280,23 @@
 </style>
 <h1>Сравнение цен</h1>
 <p style="color: #666; font-size: 16px; margin-bottom: 30px;">Пятёрочка vs Магнит</p> <!-- ФОРМА ПОИСКА -->
-<form method="get" class="search-container"> <input type="text" name="q" class="search-input"
+
+<form method="get" class="search-container">
+    <input type="text" name="q" class="search-input"
         placeholder="Введите товар для сравнения (молоко, хлеб, батон и т.д.)..." value="{{ query }}"
-        autocomplete="off"> <button type="submit" class="search-btn">🔍 Найти цены</button> </form>
+        autocomplete="off">
+    <button type="submit" class="search-btn">🔍 Найти цены</button>
+</form>
+
 <!-- ОШИБКА (если есть) -->
 {% if error_message %}
+<div class="error-message">
+    ❌ {{ error_message }}
+</div>
+{% endif %}
 
-<div class="error-message"> ❌ {{ error_message }} </div> {% endif %} <!-- СТАТИСТИКА -->
+<!-- СТАТИСТИКА -->
 {% if pairs or pyat_only or magnit_only %}
-
 <div class="stats">
     <div class="stat-box">
         <h3 class="stat-title">Пар найдено</h3>
@@ -306,70 +314,90 @@
         <h3 class="stat-title">Всего товаров</h3>
         <div class="stat-value">{{ total_products }}</div>
     </div>
-</div> <!-- ПАРЫ ТОВАРОВ -->
-{% if pairs %}
+</div>
 
+<!-- ПАРЫ ТОВАРОВ -->
+{% if pairs %}
 <div class="pairs-section">
     <h2 class="section-title">✅ Товары с парой</h2>
-    <div class="pairs-grid"> {% for pair in pairs %} <div class="pair-card">
+    <div class="pairs-grid">
+        {% for pair in pairs %}
+        <div class="pair-card">
             <div class="pair-header">
                 <span>Сходство товаров</span> <span class="pair-similarity">{{ pair.similarity }}%</span>
             </div>
             <div class="pair-content">
                 <!-- ПЯТЁРОЧКА -->
-                <div class="store-item pyat {% if pair.cheaper == 'Пятёрочка' %}cheaper{% endif %}">
+                <div class="store-item pyat {% if pair.cheaper_store_name == 'Пятёрочка' %}cheaper{% endif %}">
                     {% if pair.cheaper == 'Пятёрочка' %}
                     <div class="cheaper-label">✨ Дешевле</div>
                     {% endif %}
                     <div class="store-label">🔵 Пятёрочка</div>
                     <div class="store-name">
-                        {{ pair.pyat.name }}
+                        {{ pair.name_pyat }}
                     </div>
-                    <div class="store-price pyat">{{ pair.pyat.price|floatformat:2 }}₽</div>
+                    <div class="store-price pyat">{{ pair.price_pyat|floatformat:2 }}₽</div>
                 </div>
 
                 <!-- МАГНИТ -->
-                <div class="store-item magnit {% if pair.cheaper == 'Магнит' %}cheaper{% endif %}">
+                <div class="store-item magnit {% if pair.cheaper_store_name == 'Магнит' %}cheaper{% endif %}">
                     {% if pair.cheaper == 'Магнит' %}
                     <div class="cheaper-label">✨ Дешевле</div>
                     {% endif %}
                     <div class="store-label">🟠 Магнит</div>
                     <div class="store-name">
-                        {{ pair.magnit.name }}
+                        {{ pair.name_mag }}
                     </div>
-                    <div class="store-price magnit">{{ pair.magnit.price|floatformat:2 }}₽</div>
+                    <div class="store-price magnit">{{ pair.price_mag|floatformat:2 }}₽</div>
                 </div>
             </div>
 
             <div class="pair-footer">
                 <div>
-                    <div class="price-diff">Разница: {{ pair.price_diff|floatformat:2 }}₽</div>
-                    <div class="price-diff-percent">({{ pair.price_diff_percent|floatformat:1 }}%)</div>
+                    <div class="price-diff">Разница: {{ pair.price_difference|floatformat:2 }}₽</div>
                 </div>
-                <div class="cheaper-badge">{{ pair.cheaper }}</div>
+                <div class="cheaper-badge">{{ pair.cheaper_store_name }}</div>
+                {% if user.is_authenticated %}
+                <button type="button" class="btn-cart {% if pair.id in user_cart_ids %}in-cart{% endif %}"
+                    onclick="addToCart({{ pair.id }}, this)">
+                    {% if pair.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+                </button>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
-</div> {% endif %} <!-- ОДИНОЧНЫЕ ТОВАРЫ -->
-{% if pyat_only or magnit_only %}
+</div>
+{% endif %}
 
+<!-- ОДИНОЧНЫЕ ТОВАРЫ -->
+{% if pyat_only or magnit_only %}
 <div class="pairs-section">
     <h2 class="section-title">📌 Только в одном магазине</h2>
-    <div class="single-grid"> <!-- ПЯТЁРОЧКА ОДИНОЧНЫЕ --> {% for product in pyat_only %} <div
-            class="single-card {% if not product.id %}no-link{% endif %}">
+    <div class="single-grid">
+        <!-- ПЯТЁРОЧКА ОДИНОЧНЫЕ -->
+        {% for product in pyat_only %}
+        <div class="single-card">
             <div class="store-label">🔵 Только в Пятёрочке</div>
-            <div class="store-name"> {{ product.name }} </div>
+            <div class="store-name"> {{ product.name_pyat }} </div>
             <div
                 style=" border-top: 1px solid #e0e0e0; padding-top: 10px; font-size: 20px; font-weight: bold; color: #2196F3; margin-top: 15px; ">
-                {{ product.price|floatformat:2 }}₽</div>
-        </div> {% endfor %}
+                {{ product.price_pyat|floatformat:2 }}₽</div>
+            {% if user.is_authenticated %}
+            <button type="button" class="btn-cart {% if product.id in user_cart_ids %}in-cart{% endif %}"
+                onclick="addToCart({{ product.id }}, this)">
+                {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+
         <!-- МАГНИТ ОДИНОЧНЫЕ -->
         {% for product in magnit_only %}
-        <div class="single-card {% if not product.id %}no-link{% endif %}">
+        <div class="single-card">
             <div class="store-label">🟠 Только в Магните</div>
             <div class="store-name">
-                {{ product.name }}
+                {{ product.name_mag }}
             </div>
             <div style="
             border-top: 1px solid #e0e0e0;
@@ -378,18 +406,107 @@
             font-weight: bold;
             color: #FF9800;
             margin-top: 15px;
-        ">{{ product.price|floatformat:2 }}₽</div>
+        ">{{ product.price_mag|floatformat:2 }}₽</div>
+            {% if user.is_authenticated %}
+            <button type="button" class="btn-cart {% if product.id in user_cart_ids %}in-cart{% endif %}"
+                onclick="addToCart({{ product.id }}, this)">
+                {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+            </button>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
-</div> {% endif %}
-{% else %}
+</div>
+{% endif %}
 
+{% else %}
 <!-- ПУСТОЕ СОСТОЯНИЕ -->
 <div class="empty-state">
     <p style="font-size: 18px; margin-bottom: 10px;">Введите товар для поиска и сравнения цен</p>
     <p style="font-size: 14px;">Примеры: молоко, батон, сосиски, творог, сметана</p>
 </div>
 {% endif %}
+
+<script>
+    function addToCart(productId, button) {
+        {% if user.is_authenticated %}
+        if (!productId) {
+            alert('Ошибка: товар не найден');
+            return;
+        }
+
+        // Отправляем запрос на добавление в корзину
+        fetch('{% url "add_to_cart" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: `product_id=${productId}&quantity=1`
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Меняем внешний вид кнопки
+                    button.classList.add('in-cart');
+                    button.textContent = '✓ В корзине';
+
+                    // Показываем уведомление
+                    showToast(data.message);
+
+                    // Обновляем счётчик корзины
+                    updateCartCount();
+                } else {
+                    alert('Ошибка: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка при добавлении в корзину');
+            });
+        {% else %}
+        window.location.href = '{% url "login" %}';
+        {% endif %}
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    function updateCartCount() {
+        fetch('{% url "get_cart_count" %}')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('cartBadge');
+                if (badge) {
+                    badge.textContent = data.cart_count;
+                    badge.style.display = data.cart_count > 0 ? 'flex' : 'none';
+                }
+            });
+    }
+</script>
 
 {% endblock %}
