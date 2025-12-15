@@ -481,7 +481,8 @@ def save_results_to_db(res, query):
     stats = {
         'created': 0,
         'updated': 0,
-        'errors': 0
+        'errors': 0,
+        'categories_added': 0
     }
     print("📊 ПАРНЫЕ ТОВАРЫ (в обоих магазинах)")
 

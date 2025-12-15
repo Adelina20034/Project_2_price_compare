@@ -1,477 +1,222 @@
 {% extends 'catalog/base.html' %}
 {% load static %}
 
-{% block title %}Корзина товаров{% endblock %}
+{% block title %}Корзина{% endblock %}
 
 {% block content %}
-<div class="cart-container">
-    <h1>🛒 Ваша корзина</h1>
+<div class="container py-16">
+    <div class="flex items-center justify-between mb-16">
+        <h1>🛒 Корзина</h1>
+        {% if not is_empty %}
+        <button class="btn btn--outline btn--sm" onclick="clearCart()">
+            Очистить корзину
+        </button>
+        {% endif %}
+    </div>
 
     {% if is_empty %}
-    <div class="empty-cart">
-        <p>Корзина пуста</p>
-        <p>Добавьте товары через поиск на главной странице</p>
-        <a href="{% url 'product_list' %}" class="btn btn-primary">← Вернуться к товарам</a>
+    <div class="card">
+        <div class="card__body">
+            <p class="text-center">Корзина пуста 😢</p>
+            <p class="text-center text-secondary"><a href="/">Начать покупки</a></p>
+        </div>
     </div>
     {% else %}
-    <div class="cart-content">
-        <!-- ЛЕВАЯ ЧАСТЬ: ТОВАРЫ -->
-        <div class="cart-items-section">
-            <h2>Товары в корзине ({{ cart_items.count }})</h2>
-
-            <div class="items-list">
+    <!-- 📊 ТАБЛИЦА ТОВАРОВ -->
+    <div class="card mb-16">
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th class="col-pyat">🏪 Пятёрочка</th>
+                    <th class="col-magnit">🏪 Магнит</th>
+                    <th class="col-qty">Кол-во</th>
+                    <th class="col-actions">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
                 {% for item in cart_items %}
-                <div class="cart-item" data-item-id="{{ item.id }}">
-                    <div class="item-info">
-                        <h3>{{ item.product.main_name }}</h3>
-
-                        <div class="item-stores">
-                            {% if item.product.has_pyat %}
-                            <div class="store pyat">
-                                <span class="store-name">🏪 Пятёрочка</span>
-                                <span class="price">{{ item.product.price_pyat }}₽</span>
-                            </div>
-                            {% endif %}
-
-                            {% if item.product.has_mag %}
-                            <div class="store mag">
-                                <span class="store-name">🏪 Магнит</span>
-                                <span class="price">{{ item.product.price_mag }}₽</span>
+                <tr class="cart-row">
+                    <!-- ПЯТЁРОЧКА -->
+                    <td class="col-pyat">
+                        {% if item.product.name_pyat %}
+                        <div class="store-cell">
+                            <div class="store-label">{{ item.product.name_pyat }}</div>
+                            {% if item.product.price_pyat %}
+                            <div class="price-row">
+                                <span class="price">{{ item.product.price_pyat|floatformat:2 }}₽</span>
                             </div>
                             {% endif %}
                         </div>
-                    </div>
-
-                    <div class="item-quantity">
-                        <button class="qty-btn minus"
-                            onclick="updateQuantity({{ item.id }}, {{ item.quantity }} - 1)">−</button>
-                        <input type="number" class="qty-input" value="{{ item.quantity }}" min="1" max="100"
-                            onchange="updateQuantity({{ item.id }}, this.value)">
-                        <button class="qty-btn plus"
-                            onclick="updateQuantity({{ item.id }}, {{ item.quantity }} + 1)">+</button>
-                    </div>
-
-                    <div class="item-subtotal">
-                        {% if item.product.has_pyat %}
-                        <div class="subtotal">
-                            <small>Пятёрочка:</small>
-                            <strong>{{ item.product.price_pyat|floatformat:2 }}₽ × {{ item.quantity }} = <span
-                                    class="total-pyat">{{ item.product.price_pyat|floatformat:2 }}₽</span></strong>
+                        {% else %}
+                        <div class="empty-cell">
+                            <span class="empty-label">Нет в магазине</span>
                         </div>
                         {% endif %}
+                    </td>
 
-                        {% if item.product.has_mag %}
-                        <div class="subtotal">
-                            <small>Магнит:</small>
-                            <strong>{{ item.product.price_mag|floatformat:2 }}₽ × {{ item.quantity }} = <span
-                                    class="total-mag">{{ item.product.price_mag|floatformat:2 }}₽</span></strong>
+                    <!-- МАГНИТ -->
+                    <td class="col-magnit">
+                        {% if item.product.name_mag %}
+                        <div class="store-cell">
+                            <div class="store-label">{{ item.product.name_mag }}</div>
+                            {% if item.product.price_mag %}
+                            <div class="price-row">
+                                <span class="price">{{ item.product.price_mag|floatformat:2 }}₽</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="empty-cell">
+                            <span class="empty-label">Нет в магазине</span>
                         </div>
                         {% endif %}
-                    </div>
+                    </td>
 
-                    <button class="btn-remove" onclick="removeFromCart({{ item.id }})">✕ Удалить</button>
-                </div>
+                    <!-- КОЛИЧЕСТВО -->
+                    <td class="col-qty">
+                        <div class="qty-control">
+                            <input type="number" min="1" max="100" value="{{ item.quantity }}"
+                                data-item-id="{{ item.id }}" class="qty-input form-control"
+                                onchange="updateQuantity({{ item.id }}, this.value)" />
+                        </div>
+                    </td>
+
+                    <!-- ДЕЙСТВИЯ -->
+                    <td class="col-actions">
+                        <button class="btn btn--outline btn--sm" onclick="removeFromCart({{ item.id }})"
+                            title="Удалить из корзины">
+                            ✕ Удалить
+                        </button>
+                    </td>
+                </tr>
                 {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 💰 ИТОГОВАЯ СУММА -->
+    <div class="summary-section">
+        <div class="summary-card">
+            <h3>Итоговая сумма</h3>
+
+            <div class="summary-row">
+                <span class="summary-label">🏪 Пятёрочка:</span>
+                <span class="summary-value">{{ pyat_total }}₽</span>
             </div>
-        </div>
 
-        <!-- ПРАВАЯ ЧАСТЬ: ИТОГИ -->
-        <div class="cart-summary">
-            <div class="summary-box">
-                <h2>Итого</h2>
-
-                <div class="summary-row">
-                    <span class="label">🏪 Пятёрочка:</span>
-                    <span class="amount">{{ pyat_total }}₽</span>
-                </div>
-
-                <div class="summary-row">
-                    <span class="label">🏪 Магнит:</span>
-                    <span class="amount">{{ mag_total }}₽</span>
-                </div>
-
-                {% if cheaper_store %}
-                <div class="summary-row cheaper">
-                    <span class="label">💰 Дешевле:</span>
-                    <span class="amount">{{ cheaper_store }}</span>
-                </div>
-                {% endif %}
-
-                {% if total_savings != "0.00" %}
-                <div class="summary-row savings">
-                    <span class="label">💚 Возможная экономия:</span>
-                    <span class="amount">{{ total_savings }}₽</span>
-                </div>
-                {% endif %}
-
-                <div class="actions">
-                    <a href="{% url 'product_list' %}" class="btn btn-secondary">← Продолжить покупки</a>
-                    <button onclick="clearCart()" class="btn btn-danger">🗑️ Очистить корзину</button>
-                </div>
+            <div class="summary-row">
+                <span class="summary-label">🏪 Магнит:</span>
+                <span class="summary-value">{{ mag_total }}₽</span>
             </div>
+
+            {% if cheaper_store %}
+            <div class="summary-row highlight">
+                <span class="summary-label">💰 Дешевле:</span>
+                <span class="summary-value">{{ cheaper_store }}</span>
+            </div>
+            {% endif %}
+
+            {% if total_savings != "0.00" %}
+            <div class="summary-row savings">
+                <span class="summary-label">💚 Экономия:</span>
+                <span class="summary-value highlight-green">{{ total_savings }}₽</span>
+            </div>
+            {% endif %}
+
         </div>
     </div>
     {% endif %}
 </div>
 
-<style>
-    .cart-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-
-    h1 {
-        text-align: center;
-        margin-bottom: 30px;
-        color: #333;
-    }
-
-    .empty-cart {
-        text-align: center;
-        padding: 40px;
-        background: #f5f5f5;
-        border-radius: 8px;
-    }
-
-    .empty-cart p {
-        font-size: 18px;
-        color: #666;
-        margin: 10px 0;
-    }
-
-    .cart-content {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 20px;
-        margin-bottom: 40px;
-    }
-
-    @media (max-width: 768px) {
-        .cart-content {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .cart-items-section h2,
-    .cart-summary h2 {
-        font-size: 20px;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #f0f0f0;
-        padding-bottom: 10px;
-    }
-
-    .items-list {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .cart-item {
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        display: grid;
-        grid-template-columns: 1fr 120px 150px 50px;
-        gap: 15px;
-        align-items: center;
-    }
-
-    @media (max-width: 768px) {
-        .cart-item {
-            grid-template-columns: 1fr;
-            gap: 10px;
-        }
-    }
-
-    .item-info h3 {
-        margin: 0 0 10px 0;
-        font-size: 16px;
-    }
-
-    .item-stores {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .store {
-        font-size: 12px;
-        padding: 5px 10px;
-        border-radius: 4px;
-        background: #f0f0f0;
-    }
-
-    .store.pyat {
-        background: #e3f2fd;
-        color: #1976d2;
-    }
-
-    .store.mag {
-        background: #f3e5f5;
-        color: #7b1fa2;
-    }
-
-    .store-name {
-        font-weight: bold;
-        display: block;
-    }
-
-    .price {
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    .item-quantity {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        justify-self: center;
-    }
-
-    .qty-btn {
-        width: 30px;
-        height: 30px;
-        border: 1px solid #ddd;
-        background: white;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.2s;
-    }
-
-    .qty-btn:hover {
-        background: #f0f0f0;
-        border-color: #999;
-    }
-
-    .qty-input {
-        width: 50px;
-        text-align: center;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 5px;
-        font-size: 14px;
-    }
-
-    .item-subtotal {
-        font-size: 13px;
-        text-align: right;
-    }
-
-    .subtotal {
-        margin: 3px 0;
-    }
-
-    .subtotal small {
-        color: #999;
-        display: block;
-    }
-
-    .subtotal strong {
-        color: #333;
-    }
-
-    .btn-remove {
-        background: #ff5252;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: background 0.2s;
-        justify-self: end;
-    }
-
-    .btn-remove:hover {
-        background: #ff1744;
-    }
-
-    /* ПРАВАЯ ПАНЕЛЬ */
-    .cart-summary {
-        position: sticky;
-        top: 20px;
-        height: fit-content;
-    }
-
-    .summary-box {
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    .summary-row:last-of-type {
-        border-bottom: none;
-    }
-
-    .label {
-        font-weight: 500;
-        color: #666;
-    }
-
-    .amount {
-        font-weight: bold;
-        color: #333;
-        font-size: 16px;
-    }
-
-    .summary-row.cheaper {
-        background: #e8f5e9;
-        padding: 10px;
-        border-radius: 4px;
-        margin: 5px 0;
-    }
-
-    .summary-row.cheaper .amount {
-        color: #2e7d32;
-    }
-
-    .summary-row.savings {
-        background: #fff3e0;
-        padding: 10px;
-        border-radius: 4px;
-        margin: 5px 0;
-    }
-
-    .summary-row.savings .amount {
-        color: #e65100;
-    }
-
-    .actions {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 20px;
-    }
-
-    .btn {
-        padding: 12px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        text-decoration: none;
-        text-align: center;
-        transition: all 0.2s;
-    }
-
-    .btn-primary {
-        background: #2196F3;
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background: #1976d2;
-    }
-
-    .btn-secondary {
-        background: #f0f0f0;
-        color: #333;
-        border: 1px solid #ddd;
-    }
-
-    .btn-secondary:hover {
-        background: #e0e0e0;
-    }
-
-    .btn-danger {
-        background: #f44336;
-        color: white;
-    }
-
-    .btn-danger:hover {
-        background: #d32f2f;
-    }
-</style>
 
 <script>
+    // Обновить количество товара
     function updateQuantity(itemId, newQuantity) {
-        if (newQuantity < 1) newQuantity = 1;
-        if (newQuantity > 100) newQuantity = 100;
+        const quantity = parseInt(newQuantity);
+
+        if (quantity < 1 || quantity > 100) {
+            alert('Количество должно быть от 1 до 100');
+            location.reload();
+            return;
+        }
 
         const formData = new FormData();
-        formData.append('quantity', newQuantity);
+        formData.append('quantity', quantity);
 
         fetch(`/cart/update/${itemId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-CSRFToken': getCookie('csrftoken'),
             },
             body: formData
         })
-            .then(r => r.json())
+            .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Обновляем количество в input
-                    document.querySelector(`[data-item-id="${itemId}"] .qty-input`).value = newQuantity;
-
-                    // Пересчитываем итоги
                     location.reload();
                 } else {
                     alert('Ошибка: ' + data.message);
                 }
             })
-            .catch(e => console.error('Ошибка:', e));
+            .catch(error => console.error('Error:', error));
     }
 
+    // Удалить товар из корзины
     function removeFromCart(itemId) {
         if (confirm('Удалить товар из корзины?')) {
-            const formData = new FormData();
-
             fetch(`/cart/remove/${itemId}/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                },
-                body: formData
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
             })
-                .then(r => r.json())
+                .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        // Удаляем элемент со страницы
-                        document.querySelector(`[data-item-id="${itemId}"]`).remove();
-
-                        // Перезагружаем страницу для обновления итогов
                         location.reload();
                     } else {
                         alert('Ошибка: ' + data.message);
                     }
-                });
+                })
+                .catch(error => console.error('Error:', error));
         }
     }
 
+    // Очистить корзину
     function clearCart() {
-        if (confirm('Очистить всю корзину?')) {
-            const formData = new FormData();
-
+        if (confirm('Вы уверены? Это удалит все товары из корзины!')) {
             fetch('/cart/clear/', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                },
-                body: formData
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
             })
-                .then(r => r.json())
+                .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
                         location.reload();
                     } else {
                         alert('Ошибка: ' + data.message);
                     }
-                });
+                })
+                .catch(error => console.error('Error:', error));
         }
+    }
+
+    // Получить CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 </script>
 {% endblock %}

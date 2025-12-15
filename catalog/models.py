@@ -75,6 +75,10 @@ class Product(models.Model):
             return 'Магнит'
         return None
 
+    @property
+    def main_name(self):
+        return self.name_pyat or self.name_mag or "Товар без названия"
+
 
 class CartItem(models.Model):
     """
