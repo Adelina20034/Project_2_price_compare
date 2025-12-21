@@ -1,0 +1,113 @@
+/* ===============================
+   Register page
+   =============================== */
+
+.register-page {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-24);
+}
+
+.register-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+    box-shadow: var(--shadow-sm);
+}
+
+
+/* ---------- Title ---------- */
+
+.register-title {
+    font-size: clamp(20px, 4vw, 26px);
+    font-weight: var(--fw-bold);
+    text-align: center;
+    margin-bottom: var(--space-24);
+}
+
+
+/* ---------- Form ---------- */
+
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.register-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.register-field label {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+
+/* ---------- Inputs ---------- */
+
+.register-field input {
+    height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    font-size: var(--fs-base);
+}
+
+.register-field input:focus {
+    outline: none;
+    border-color: var(--pyat);
+}
+
+
+/* ---------- Help & errors ---------- */
+
+.register-help {
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+}
+
+.register-error {
+    font-size: var(--fs-xs);
+    color: #dc3545;
+}
+
+
+/* ---------- Submit ---------- */
+
+.register-submit {
+    margin-top: var(--space-8);
+    height: 44px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--pyat);
+    color: #fff;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+}
+
+.register-submit:hover {
+    opacity: 0.9;
+}
+
+
+/* ---------- Footer ---------- */
+
+.register-footer {
+    margin-top: var(--space-16);
+    text-align: center;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.register-footer a {
+    color: var(--text);
+}

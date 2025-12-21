@@ -1,0 +1,94 @@
+:root {
+    /* ===============================
+     Цвета (основные)
+     =============================== */
+    --white: #ffffff;
+    --black: #000000;
+
+    --bg: #fcfcf9;
+    --surface: #ffffff;
+
+    --text: #13343b;
+    --text-secondary: #626c71;
+
+    --border: rgba(94, 82, 64, 0.2);
+    --border-light: rgba(94, 82, 64, 0.12);
+
+    /* ===============================
+     Бренды магазинов
+     =============================== */
+    --pyat: #21808d;
+    --pyat-hover: #1d7480;
+
+    --magnit: #a84b2f;
+    --magnit-hover: #e68161;
+
+    /* ===============================
+     Статусы
+     =============================== */
+    --success: #21808d;
+    --error: #c0152f;
+    --warning: #a84b2f;
+
+    /* ===============================
+     Типографика
+     =============================== */
+    --font-base: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --fs-xs: 11px;
+    --fs-sm: 12px;
+    --fs-base: 14px;
+    --fs-lg: 16px;
+    --fs-xl: 18px;
+    --fs-2xl: 20px;
+    --fs-3xl: 24px;
+    --fs-4xl: 30px;
+
+    --fw-normal: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --fw-bold: 700;
+
+    --lh-normal: 1.5;
+    --lh-tight: 1.2;
+
+    /* ===============================
+     Отступы
+     =============================== */
+    --space-4: 4px;
+    --space-8: 8px;
+    --space-12: 12px;
+    --space-16: 16px;
+    --space-20: 20px;
+    --space-24: 24px;
+    --space-32: 32px;
+
+    /* ===============================
+     Скругления
+     =============================== */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+
+    /* ===============================
+     Тени
+     =============================== */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+
+    /* ===============================
+     Layout
+     =============================== */
+    --container-sm: 640px;
+    --container-md: 768px;
+    --container-lg: 1024px;
+    --container-xl: 1280px;
+    --container-xxl: 1440px;
+
+    --height-sm: 40px;
+    --height-md: 70px;
+    --height-lg: 80px;
+}

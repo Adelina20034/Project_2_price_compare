@@ -1,48 +1,43 @@
 {% extends 'catalog/base.html' %}
+{% load static %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/login.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4">Вход в систему</h3>
 
-                <form method="post">
-                    {% csrf_token %}
+<div class="login-page">
+    <div class="login-card">
+        <h1 class="login-title">Вход в систему</h1>
 
-                    <!-- === БЛОК ОШИБОК === -->
-                    <!-- Если есть ошибки в форме (любые), показываем красный блок -->
-                    {% if form.errors %}
-                        <div class="alert alert-danger text-center" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            Неверное имя пользователя или пароль.
-                        </div>
-                    {% endif %}
-                    <!-- =================== -->
+        {% if form.errors %}
+        <div class="login-error">
+            ❌ Неверное имя пользователя или пароль
+        </div>
+        {% endif %}
 
-                    <div class="mb-3">
-                        <label for="id_username" class="form-label">Имя пользователя</label>
-                        <!-- Вставляем поле вручную и добавляем класс Bootstrap -->
-                        <input type="text" name="username" class="form-control" 
-                               id="id_username" required autofocus>
-                    </div>
+        <form method="post" class="login-form">
+            {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label for="id_password" class="form-label">Пароль</label>
-                        <input type="password" name="password" class="form-control" 
-                               id="id_password" required>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Войти</button>
-                    </div>
-                </form>
-                
-                <div class="text-center mt-3">
-                    <small class="text-muted">Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></small>
-                </div>
+            <div class="login-field">
+                <label for="id_username">Имя пользователя</label>
+                <input type="text" name="username" id="id_username" required autofocus>
             </div>
+
+            <div class="login-field">
+                <label for="id_password">Пароль</label>
+                <input type="password" name="password" id="id_password" required>
+            </div>
+
+            <button type="submit" class="login-submit">Войти</button>
+        </form>
+
+        <div class="login-footer">
+            Нет аккаунта?
+            <a href="{% url 'register' %}">Зарегистрироваться</a>
         </div>
     </div>
 </div>
+
 {% endblock %}

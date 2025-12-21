@@ -6,27 +6,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Сравнение цен{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <!-- Подключаем Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Иконки Bootstrap -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    {% block page_css %}{% endblock %}
 </head>
 
-<body class="bg-light">
+<body>
     <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{% url 'product_list' %}">
+            <a class="navbar-brand" href="{% url 'product_list' %}">
                 PriceCompare
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+                ☰
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     <li class="nav-item">
                         <a href="{% url 'cart' %}" class="cart-button">
@@ -43,7 +40,7 @@
                     <li class="nav-item">
                         <form action="{% url 'logout' %}" method="post" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-light btn-sm">
+                            <button type="submit" class="btn-logout">
                                 <i class="bi bi-box-arrow-right"></i> Выйти
                             </button>
                         </form>
@@ -52,10 +49,10 @@
                     {% else %}
 
                     <li class="nav-item">
-                        <a href="{% url 'login' %}" class="btn btn-light btn-sm text-primary fw-bold">Войти</a>
+                        <a href="{% url 'login' %}" class="btn-login">Войти</a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'register' %}" class="btn btn-outline-light btn-sm">Регистрация</a>
+                        <a href="{% url 'register' %}" class="btn-register">Регистрация</a>
                     </li>
                     {% endif %}
                 </ul>

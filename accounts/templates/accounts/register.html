@@ -1,32 +1,47 @@
 {% extends 'catalog/base.html' %}
+{% load static %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/register.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-body">
-                <h3 class="text-center mb-4">Регистрация</h3>
-                <form method="post">
-                    {% csrf_token %}
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label class="form-label">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}
-                                <small class="text-muted d-block" style="font-size: 0.8em;">{{ field.help_text }}</small>
-                            {% endif %}
-                            {% if field.errors %}
-                                <small class="text-danger">{{ field.errors.0 }}</small>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                    
-                    <button type="submit" class="btn btn-success w-100">Создать аккаунт</button>
-                </form>
-                <div class="text-center mt-3">
-                    <a href="{% url 'login' %}">Уже есть аккаунт? Войти</a>
+<div class="register-page">
+    <div class="register-card">
+        <h1 class="register-title">Регистрация</h1>
+        <form method="post" class="register-form">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="register-field">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+
+                {{ field }}
+
+                {% if field.help_text %}
+                <div class="register-help">
+                    {{ field.help_text }}
                 </div>
+                {% endif %}
+
+                {% if field.errors %}
+                <div class="register-error">
+                    {{ field.errors.0 }}
+                </div>
+                {% endif %}
             </div>
+            {% endfor %}
+
+            <button type="submit" class="register-submit">
+                Создать аккаунт
+            </button>
+        </form>
+
+        <div class="register-footer">
+            Уже есть аккаунт?
+            <a href="{% url 'login' %}">Войти</a>
         </div>
     </div>
 </div>

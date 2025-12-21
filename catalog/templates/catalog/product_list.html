@@ -1,91 +1,89 @@
 {% extends 'catalog/base.html' %}
+{% load static %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/product-list.css' %}">
+{% endblock %}
 
 {% block title %}Сравнение цен{% endblock %}
 
 {% block content %}
 
 
-<h1>Сравнение цен</h1>
-<p style="color: #666; font-size: 16px; margin-bottom: 30px;">Пятёрочка vs Магнит</p> <!-- ФОРМА ПОИСКА -->
+<h1 class="pl-title">Сравнение цен</h1>
+<p class="pl-subtitle">Пятёрочка vs Магнит</p>
 
-<form method="get" class="search-container">
-    <input type="text" name="q" class="search-input"
-        placeholder="Введите товар для сравнения (молоко, хлеб, батон и т.д.)..." value="{{ query }}"
-        autocomplete="off">
-    <button type="submit" class="search-btn">🔍 Найти цены</button>
+<form method="get" class="pl-search">
+    <input type="text" name="q" class="pl-search__input"
+        placeholder="Введите товар для сравнения (молоко, хлеб, батон и т.д.)..." value="{{ query }}">
+    <button type="submit" class="pl-search__button">🔍 Найти цены</button>
 </form>
 
 <!-- ОШИБКА (если есть) -->
 {% if error_message %}
-<div class="error-message">
-    ❌ {{ error_message }}
-</div>
+<div class="pl-error">❌ {{ error_message }}</div>
 {% endif %}
 
 <!-- СТАТИСТИКА -->
 {% if pairs or pyat_only or magnit_only %}
-<div class="stats">
-    <div class="stat-box">
-        <h3 class="stat-title">Пар найдено</h3>
-        <div class="stat-value">{{ pairs_count }}</div>
+<div class="pl-stats">
+    <div class="pl-stats__item">
+        <h3 class="pl-stats__title">Пар найдено</h3>
+        <div class="pl-stats__value">{{ pairs_count }}</div>
     </div>
-    <div class="stat-box">
-        <h3 class="stat-title">Только в Пятёрочке</h3>
-        <div class="stat-value">{{ pyat_single_count }}</div>
+    <div class="pl-stats__item">
+        <h3 class="pl-stats__title">Только в Пятёрочке</h3>
+        <div class="pl-stats__value">{{ pyat_single_count }}</div>
     </div>
-    <div class="stat-box">
-        <h3 class="stat-title">Только в Магните</h3>
-        <div class="stat-value">{{ magnit_single_count }}</div>
+    <div class="pl-stats__item">
+        <h3 class="pl-stats__title">Только в Магните</h3>
+        <div class="pl-stats__value">{{ magnit_single_count }}</div>
     </div>
-    <div class="stat-box">
-        <h3 class="stat-title">Всего товаров</h3>
-        <div class="stat-value">{{ total_products }}</div>
+    <div class="pl-stats__item">
+        <h3 class="pl-stats__title">Всего товаров</h3>
+        <div class="pl-stats__value">{{ total_products }}</div>
     </div>
 </div>
 
 <!-- ПАРЫ ТОВАРОВ -->
 {% if pairs %}
-<div class="pairs-section">
-    <h2 class="section-title">✅ Товары с парой</h2>
-    <div class="pairs-grid">
+<div class="pl-section">
+    <h2 class="pl-section__title">✅ Товары с парой</h2>
+    <div class="pl-pairs">
         {% for pair in pairs %}
-        <div class="pair-card">
-            <div class="pair-header">
-                <span>Сходство товаров</span> <span class="pair-similarity">{{ pair.similarity }}%</span>
+        <div class="pl-pair">
+            <div class="pl-pair__header">
+                <span>Сходство товаров</span>
+                <span class="pl-pair__similarity">{{ pair.similarity }}%</span>
             </div>
-            <div class="pair-content">
+
+            <div class="pl-pair__content">
                 <!-- ПЯТЁРОЧКА -->
-                <div class="store-item pyat {% if pair.cheaper_store_name == 'Пятёрочка' %}cheaper{% endif %}">
-                    {% if pair.cheaper == 'Пятёрочка' %}
-                    <div class="cheaper-label">✨ Дешевле</div>
-                    {% endif %}
-                    <div class="store-label">🔵 Пятёрочка</div>
-                    <div class="store-name">
-                        {{ pair.name_pyat }}
-                    </div>
-                    <div class="store-price pyat">{{ pair.price_pyat|floatformat:2 }}₽</div>
+                <div
+                    class="pl-store pl-store--pyat {% if pair.cheaper_store_name == 'Пятёрочка' %}is-cheaper{% endif %}">
+                    <div class="pl-store__label">🔵 Пятёрочка</div>
+                    <div class="pl-store__name">{{ pair.name_pyat }}</div>
+                    <div class="pl-store__price pl-store__price--pyat">{{ pair.price_pyat|floatformat:2 }}₽</div>
                 </div>
 
                 <!-- МАГНИТ -->
-                <div class="store-item magnit {% if pair.cheaper_store_name == 'Магнит' %}cheaper{% endif %}">
-                    {% if pair.cheaper == 'Магнит' %}
-                    <div class="cheaper-label">✨ Дешевле</div>
-                    {% endif %}
-                    <div class="store-label">🟠 Магнит</div>
-                    <div class="store-name">
-                        {{ pair.name_mag }}
-                    </div>
-                    <div class="store-price magnit">{{ pair.price_mag|floatformat:2 }}₽</div>
+                <div
+                    class="pl-store pl-store--magnit {% if pair.cheaper_store_name == 'Магнит' %}is-cheaper{% endif %}">
+                    <div class="pl-store__label">🟠 Магнит</div>
+                    <div class="pl-store__name">{{ pair.name_mag }}</div>
+                    <div class="pl-store__price pl-store__price--magnit">{{ pair.price_mag|floatformat:2 }}₽</div>
                 </div>
             </div>
 
-            <div class="pair-footer">
-                <div>
-                    <div class="price-diff">Разница: {{ pair.price_difference|floatformat:2 }}₽</div>
+            <div class="pl-pair__footer">
+                <div class="pl-pair__diff">
+                    Разница: {{ pair.price_difference|floatformat:2 }}₽
                 </div>
+
                 <div class="cheaper-badge">{{ pair.cheaper_store_name }}</div>
+
                 {% if user.is_authenticated %}
-                <button type="button" class="btn-cart {% if pair.id in user_cart_ids %}in-cart{% endif %}"
+                <button class="pl-cart-btn {% if pair.id in user_cart_ids %}is-in-cart{% endif %}"
                     onclick="addToCart({{ pair.id }}, this)">
                     {% if pair.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
                 </button>
@@ -99,46 +97,58 @@
 
 <!-- ОДИНОЧНЫЕ ТОВАРЫ -->
 {% if pyat_only or magnit_only %}
-<div class="pairs-section">
-    <h2 class="section-title">📌 Только в одном магазине</h2>
-    <div class="single-grid">
+<div class="pl-section">
+    <h2 class="pl-section__title">📌 Только в одном магазине</h2>
+
+    <div class="pl-single">
         <!-- ПЯТЁРОЧКА ОДИНОЧНЫЕ -->
         {% for product in pyat_only %}
-        <div class="single-card">
-            <div class="store-label">🔵 Только в Пятёрочке</div>
-            <div class="store-name"> {{ product.name_pyat }} </div>
-            <div
-                style=" border-top: 1px solid #e0e0e0; padding-top: 10px; font-size: 20px; font-weight: bold; color: #2196F3; margin-top: 15px; ">
-                {{ product.price_pyat|floatformat:2 }}₽</div>
+        <div class="pl-single__item">
+            <div class="pl-single-main-content">
+                <div class="pl-store__label">🔵 Только в Пятёрочке</div>
+                <div class="pl-store__name"> {{ product.name_pyat }} </div>
+            </div>
             {% if user.is_authenticated %}
-            <button type="button" class="btn-cart {% if product.id in user_cart_ids %}in-cart{% endif %}"
-                onclick="addToCart({{ product.id }}, this)">
-                {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
-            </button>
+            <div class="pl-single-footer">
+                <div class="pl-store__price pl-store__price--pyat">
+                    {{ product.price_pyat|floatformat:2 }}₽
+                </div>
+                <button class="pl-cart-btn {% if product.id in user_cart_ids %}is-in-cart{% endif %}"
+                    onclick="addToCart({{ product.id }}, this)">
+                    {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+                </button>
+            </div>
+            {% else %}
+            <div class="pl-store__price pl-store__price--pyat">
+                {{ product.price_pyat|floatformat:2 }}₽
+            </div>
+
             {% endif %}
         </div>
         {% endfor %}
 
         <!-- МАГНИТ ОДИНОЧНЫЕ -->
         {% for product in magnit_only %}
-        <div class="single-card">
-            <div class="store-label">🟠 Только в Магните</div>
-            <div class="store-name">
-                {{ product.name_mag }}
+        <div class="pl-single__item">
+            <div class="pl-single-main-content">
+                <div class="pl-store__label">🟠 Только в Магните</div>
+                <div class="pl-store__name">{{ product.name_mag }}</div>
             </div>
-            <div style="
-            border-top: 1px solid #e0e0e0;
-            padding-top: 10px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #FF9800;
-            margin-top: 15px;
-        ">{{ product.price_mag|floatformat:2 }}₽</div>
+
             {% if user.is_authenticated %}
-            <button type="button" class="btn-cart {% if product.id in user_cart_ids %}in-cart{% endif %}"
-                onclick="addToCart({{ product.id }}, this)">
-                {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
-            </button>
+            <div class="pl-single-footer">
+                <div class="pl-store__price pl-store__price--magnit">
+                    {{ product.price_mag|floatformat:2 }}₽
+                </div>
+                <button class="pl-cart-btn {% if product.id in user_cart_ids %}is-in-cart{% endif %}"
+                    onclick="addToCart({{ product.id }}, this)">
+                    {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+                </button>
+            </div>
+            {% else %}
+            <div class="pl-store__price pl-store__price--magnit">
+                {{ product.price_mag|floatformat:2 }}₽
+            </div>
             {% endif %}
         </div>
         {% endfor %}
@@ -148,9 +158,9 @@
 
 {% else %}
 <!-- ПУСТОЕ СОСТОЯНИЕ -->
-<div class="empty-state">
-    <p style="font-size: 18px; margin-bottom: 10px;">Введите товар для поиска и сравнения цен</p>
-    <p style="font-size: 14px;">Примеры: молоко, батон, сосиски, творог, сметана</p>
+<div class="pl-empty">
+    <p class="pl-empty__title">Введите товар для поиска и сравнения цен</p>
+    <p class="pl-empty__text">Примеры: молоко, батон, сосиски, творог, сметана</p>
 </div>
 {% endif %}
 

@@ -1,0 +1,94 @@
+/* ===============================
+   Reset / Normalize
+   =============================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 14px;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-base);
+    font-size: var(--fs-base);
+    line-height: var(--lh-normal);
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* ===============================
+   Текст и заголовки
+   =============================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-tight);
+    margin: 0 0 var(--space-16);
+}
+
+h1 {
+    font-size: var(--fs-4xl);
+}
+
+h2 {
+    font-size: var(--fs-3xl);
+}
+
+h3 {
+    font-size: var(--fs-2xl);
+}
+
+h4 {
+    font-size: var(--fs-xl);
+}
+
+p {
+    margin: 0 0 var(--space-16);
+    color: var(--text-secondary);
+}
+
+a {
+    color: var(--pyat);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ===============================
+   Таблицы и формы
+   =============================== */
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+input,
+button,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* ===============================
+   Прочее
+   =============================== */
+
+button {
+    cursor: pointer;
+    background: none;
+    border: none;
+}

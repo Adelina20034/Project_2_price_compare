@@ -1,0 +1,134 @@
+/* ===============================
+   UI Components
+   =============================== */
+
+/* ---------- Buttons ---------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+
+    font-size: var(--fs-base);
+    font-weight: var(--fw-medium);
+
+    background: var(--surface);
+    color: var(--text);
+}
+
+.btn:hover {
+    background: var(--bg);
+}
+
+.btn-primary {
+    background: var(--pyat);
+    border-color: var(--pyat);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--pyat-hover);
+}
+
+.btn-outline {
+    background: transparent;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: var(--fs-sm);
+}
+
+
+/* ---------- Cart button (product list) ---------- */
+
+.pl-cart-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+
+    font-size: var(--fs-sm);
+    background: var(--surface);
+}
+
+.pl-cart-btn:hover {
+    background: var(--bg);
+}
+
+.pl-cart-btn.is-in-cart {
+    background: var(--pyat);
+    color: #fff;
+    border-color: var(--pyat);
+}
+
+
+/* ---------- Cards ---------- */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.card__body {
+    padding: var(--space-16);
+}
+
+
+/* ---------- Forms ---------- */
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--pyat);
+}
+
+
+
+
+/* ---------- Toast ---------- */
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+
+    padding: 12px 16px;
+    font-size: var(--fs-sm);
+    z-index: 1000;
+
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

@@ -1,132 +1,134 @@
 {% extends 'catalog/base.html' %}
 {% load static %}
 
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/pages/cart.css' %}">
+{% endblock %}
+
 {% block title %}Корзина{% endblock %}
 
 {% block content %}
-<div class="container py-16">
-    <div class="flex items-center justify-between mb-16">
-        <h1>🛒 Корзина</h1>
-        {% if not is_empty %}
-        <button class="btn btn--outline btn--sm" onclick="clearCart()">
-            Очистить корзину
-        </button>
-        {% endif %}
-    </div>
 
-    {% if is_empty %}
-    <div class="card">
-        <div class="card__body">
-            <p class="text-center">Корзина пуста 😢</p>
-            <p class="text-center text-secondary"><a href="/">Начать покупки</a></p>
-        </div>
-    </div>
-    {% else %}
-    <!-- 📊 ТАБЛИЦА ТОВАРОВ -->
-    <div class="card mb-16">
-        <table class="cart-table">
-            <thead>
-                <tr>
-                    <th class="col-pyat">🏪 Пятёрочка</th>
-                    <th class="col-magnit">🏪 Магнит</th>
-                    <th class="col-qty">Кол-во</th>
-                    <th class="col-actions">Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in cart_items %}
-                <tr class="cart-row">
-                    <!-- ПЯТЁРОЧКА -->
-                    <td class="col-pyat">
-                        {% if item.product.name_pyat %}
-                        <div class="store-cell">
-                            <div class="store-label">{{ item.product.name_pyat }}</div>
-                            {% if item.product.price_pyat %}
-                            <div class="price-row">
-                                <span class="price">{{ item.product.price_pyat|floatformat:2 }}₽</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% else %}
-                        <div class="empty-cell">
-                            <span class="empty-label">Нет в магазине</span>
-                        </div>
-                        {% endif %}
-                    </td>
-
-                    <!-- МАГНИТ -->
-                    <td class="col-magnit">
-                        {% if item.product.name_mag %}
-                        <div class="store-cell">
-                            <div class="store-label">{{ item.product.name_mag }}</div>
-                            {% if item.product.price_mag %}
-                            <div class="price-row">
-                                <span class="price">{{ item.product.price_mag|floatformat:2 }}₽</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% else %}
-                        <div class="empty-cell">
-                            <span class="empty-label">Нет в магазине</span>
-                        </div>
-                        {% endif %}
-                    </td>
-
-                    <!-- КОЛИЧЕСТВО -->
-                    <td class="col-qty">
-                        <div class="qty-control">
-                            <input type="number" min="1" max="100" value="{{ item.quantity }}"
-                                data-item-id="{{ item.id }}" class="qty-input form-control"
-                                onchange="updateQuantity({{ item.id }}, this.value)" />
-                        </div>
-                    </td>
-
-                    <!-- ДЕЙСТВИЯ -->
-                    <td class="col-actions">
-                        <button class="btn btn--outline btn--sm" onclick="removeFromCart({{ item.id }})"
-                            title="Удалить из корзины">
-                            ✕ Удалить
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- 💰 ИТОГОВАЯ СУММА -->
-    <div class="summary-section">
-        <div class="summary-card">
-            <h3>Итоговая сумма</h3>
-
-            <div class="summary-row">
-                <span class="summary-label">🏪 Пятёрочка:</span>
-                <span class="summary-value">{{ pyat_total }}₽</span>
-            </div>
-
-            <div class="summary-row">
-                <span class="summary-label">🏪 Магнит:</span>
-                <span class="summary-value">{{ mag_total }}₽</span>
-            </div>
-
-            {% if cheaper_store %}
-            <div class="summary-row highlight">
-                <span class="summary-label">💰 Дешевле:</span>
-                <span class="summary-value">{{ cheaper_store }}</span>
-            </div>
-            {% endif %}
-
-            {% if total_savings != "0.00" %}
-            <div class="summary-row savings">
-                <span class="summary-label">💚 Экономия:</span>
-                <span class="summary-value highlight-green">{{ total_savings }}₽</span>
-            </div>
-            {% endif %}
-
-        </div>
-    </div>
+<div class="cart-header">
+    <h1 class="cart-title">🛒 Корзина</h1>
+    {% if not is_empty %}
+    <button class="cart-clear-btn" onclick="clearCart()">
+        Очистить корзину
+    </button>
     {% endif %}
 </div>
+
+{% if is_empty %}
+<div class="cart-empty">
+    <div class="card__body">
+        <p class="cart-empty__title">Корзина пуста 😢</p>
+        <p class="cart-empty__link"><a href="/">Начать покупки</a></p>
+    </div>
+</div>
+{% else %}
+<!-- 📊 ТАБЛИЦА ТОВАРОВ -->
+<div class="cart-table-wrapper">
+    <table class="cart-table">
+        <thead>
+            <tr class="cart-row">
+                <th class="cart-col cart-col--pyat">🏪 Пятёрочка</th>
+                <th class="cart-col cart-col--magnit">🏪 Магнит</th>
+                <th class="cart-col cart-col--qty">Кол-во</th>
+                <th class="cart-col cart-col--actions">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr class="cart-row">
+                <!-- ПЯТЁРОЧКА -->
+                <td class="cart-col cart-col--pyat">
+                    {% if item.product.name_pyat %}
+                    <div class="store-cell">
+                        <div class="store-label">{{ item.product.name_pyat }}</div>
+                        {% if item.product.price_pyat %}
+                        <div class="price-row">
+                            <span class="price">{{ item.product.price_pyat|floatformat:2 }}₽</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="empty-cell">
+                        <span class="empty-label">Нет в магазине</span>
+                    </div>
+                    {% endif %}
+                </td>
+
+                <!-- МАГНИТ -->
+                <td class="cart-col cart-col--magnit">
+                    {% if item.product.name_mag %}
+                    <div class="store-cell">
+                        <div class="store-label">{{ item.product.name_mag }}</div>
+                        {% if item.product.price_mag %}
+                        <div class="price-row">
+                            <span class="price">{{ item.product.price_mag|floatformat:2 }}₽</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="empty-cell">
+                        <span class="empty-label">Нет в магазине</span>
+                    </div>
+                    {% endif %}
+                </td>
+
+                <!-- КОЛИЧЕСТВО -->
+                <td class="cart-col cart-col--qty">
+                    <div class="qty-control">
+                        <input type="number" min="1" max="100" value="{{ item.quantity }}" data-item-id="{{ item.id }}"
+                            class="cart-qty-input" onchange="updateQuantity({{ item.id }}, this.value)" />
+                    </div>
+                </td>
+
+                <!-- ДЕЙСТВИЯ -->
+                <td class="cart-col cart-col--actions">
+                    <button class="cart-remove-btn" onclick="removeFromCart({{ item.id }})" title="Удалить из корзины">
+                        ✕ Удалить
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 💰 ИТОГОВАЯ СУММА -->
+<div class="summary-section">
+    <div class="summary-card">
+        <h3>Итоговая сумма</h3>
+
+        <div class="summary-row">
+            <span class="summary-label">🏪 Пятёрочка:</span>
+            <span class="summary-value">{{ pyat_total }}₽</span>
+        </div>
+
+        <div class="summary-row">
+            <span class="summary-label">🏪 Магнит:</span>
+            <span class="summary-value">{{ mag_total }}₽</span>
+        </div>
+
+        {% if cheaper_store %}
+        <div class="summary-row highlight">
+            <span class="summary-label">💰 Дешевле:</span>
+            <span class="summary-value">{{ cheaper_store }}</span>
+        </div>
+        {% endif %}
+
+        {% if total_savings != "0.00" %}
+        <div class="summary-row savings">
+            <span class="summary-label">💚 Экономия:</span>
+            <span class="summary-value highlight-green">{{ total_savings }}₽</span>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endif %}
+
 
 
 <script>

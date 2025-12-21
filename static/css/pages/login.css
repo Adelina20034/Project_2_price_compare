@@ -1,0 +1,114 @@
+/* ===============================
+   Login page
+   =============================== */
+
+.login-page {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-24);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+    box-shadow: var(--shadow-sm);
+}
+
+
+/* ---------- Title ---------- */
+
+.login-title {
+    color: var(--text);
+    font-size: clamp(20px, 4vw, 26px);
+    font-weight: var(--fw-bold);
+    text-align: center;
+    margin-bottom: var(--space-24);
+}
+
+
+/* ---------- Error ---------- */
+
+.login-error {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: var(--radius);
+    padding: var(--space-12);
+    font-size: var(--fs-sm);
+    text-align: center;
+    margin-bottom: var(--space-16);
+}
+
+
+/* ---------- Form ---------- */
+
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-field label {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.login-field input {
+    height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    font-size: var(--fs-base);
+}
+
+.login-field input:focus {
+    outline: none;
+    border-color: var(--pyat);
+}
+
+
+/* ---------- Submit ---------- */
+
+.login-submit {
+    margin-top: var(--space-8);
+    height: 44px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--pyat);
+    color: var(--white);
+    font-size: var(--fs-base);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+}
+
+.login-submit:hover {
+    background: var(--pyat-hover);
+    opacity: 0.9;
+}
+
+
+/* ---------- Footer ---------- */
+
+.login-footer {
+    margin-top: var(--space-16);
+    text-align: center;
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.login-footer a {
+    color: var(--text);
+}
