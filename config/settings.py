@@ -127,3 +127,34 @@ LOGIN_REDIRECT_URL = '/'
 
 # Куда перенаправлять после выхода
 LOGOUT_REDIRECT_URL = '/'
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {funcName}:{lineno} - {message}',
+            'style': '{',
+            'datefmt': '%d/%b/%Y %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/parsing.log',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+        },
+    },
+    'loggers': {
+        'catalog.views': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+    },
+}

@@ -24,147 +24,235 @@
 <div class="pl-error">❌ {{ error_message }}</div>
 {% endif %}
 
-<!-- СТАТИСТИКА -->
-{% if pairs or pyat_only or magnit_only %}
-<div class="pl-stats">
-    <div class="pl-stats__item">
-        <h3 class="pl-stats__title">Пар найдено</h3>
-        <div class="pl-stats__value">{{ pairs_count }}</div>
-    </div>
-    <div class="pl-stats__item">
-        <h3 class="pl-stats__title">Только в Пятёрочке</h3>
-        <div class="pl-stats__value">{{ pyat_single_count }}</div>
-    </div>
-    <div class="pl-stats__item">
-        <h3 class="pl-stats__title">Только в Магните</h3>
-        <div class="pl-stats__value">{{ magnit_single_count }}</div>
-    </div>
-    <div class="pl-stats__item">
-        <h3 class="pl-stats__title">Всего товаров</h3>
-        <div class="pl-stats__value">{{ total_products }}</div>
-    </div>
+<!-- ИНДИКАТОР ПАРСИНГА -->
+<div id="loading-indicator" class="loading-indicator" data-is-searching="{{ is_searching|lower }}">
+    <div class="spinner"></div>
+    <span class="loading-text">
+        🔍 Ищем товары в магазинах... Это может занять какое-то время.
+    </span>
 </div>
 
-<!-- ПАРЫ ТОВАРОВ -->
-{% if pairs %}
-<div class="pl-section">
-    <h2 class="pl-section__title">✅ Товары с парой</h2>
-    <div class="pl-pairs">
-        {% for pair in pairs %}
-        <div class="pl-pair">
-            <div class="pl-pair__header">
-                <span>Сходство товаров</span>
-                <span class="pl-pair__similarity">{{ pair.similarity }}%</span>
-            </div>
-
-            <div class="pl-pair__content">
-                <!-- ПЯТЁРОЧКА -->
-                <div
-                    class="pl-store pl-store--pyat {% if pair.cheaper_store_name == 'Пятёрочка' %}is-cheaper{% endif %}">
-                    <div class="pl-store__label">🔵 Пятёрочка</div>
-                    <div class="pl-store__name">{{ pair.name_pyat }}</div>
-                    <div class="pl-store__price pl-store__price--pyat">{{ pair.price_pyat|floatformat:2 }}₽</div>
-                </div>
-
-                <!-- МАГНИТ -->
-                <div
-                    class="pl-store pl-store--magnit {% if pair.cheaper_store_name == 'Магнит' %}is-cheaper{% endif %}">
-                    <div class="pl-store__label">🟠 Магнит</div>
-                    <div class="pl-store__name">{{ pair.name_mag }}</div>
-                    <div class="pl-store__price pl-store__price--magnit">{{ pair.price_mag|floatformat:2 }}₽</div>
-                </div>
-            </div>
-
-            <div class="pl-pair__footer">
-                <div class="pl-pair__diff">
-                    Разница: {{ pair.price_difference|floatformat:2 }}₽
-                </div>
-
-                <div class="cheaper-badge">{{ pair.cheaper_store_name }}</div>
-
-                {% if user.is_authenticated %}
-                <button class="pl-cart-btn {% if pair.id in user_cart_ids %}is-in-cart{% endif %}"
-                    onclick="addToCart({{ pair.id }}, this)">
-                    {% if pair.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
-                </button>
-                {% endif %}
-            </div>
+<div id="products-content">
+    {% if pairs or pyat_only or magnit_only %}
+    <!-- СТАТИСТИКА -->
+    <div class="pl-stats">
+        <div class="pl-stats__item">
+            <h3 class="pl-stats__title">Пар найдено</h3>
+            <div class="pl-stats__value">{{ pairs_count }}</div>
         </div>
-        {% endfor %}
+        <div class="pl-stats__item">
+            <h3 class="pl-stats__title">Только в Пятёрочке</h3>
+            <div class="pl-stats__value">{{ pyat_single_count }}</div>
+        </div>
+        <div class="pl-stats__item">
+            <h3 class="pl-stats__title">Только в Магните</h3>
+            <div class="pl-stats__value">{{ magnit_single_count }}</div>
+        </div>
+        <div class="pl-stats__item">
+            <h3 class="pl-stats__title">Всего товаров</h3>
+            <div class="pl-stats__value">{{ total_products }}</div>
+        </div>
     </div>
-</div>
-{% endif %}
 
-<!-- ОДИНОЧНЫЕ ТОВАРЫ -->
-{% if pyat_only or magnit_only %}
-<div class="pl-section">
-    <h2 class="pl-section__title">📌 Только в одном магазине</h2>
+    <!-- ПАРЫ ТОВАРОВ -->
+    {% if pairs %}
+    <div class="pl-section">
+        <h2 class="pl-section__title">✅ Товары с парой</h2>
+        <div class="pl-pairs">
+            {% for pair in pairs %}
+            <div class="pl-pair">
+                <div class="pl-pair__header">
+                    <span>Сходство товаров</span>
+                    <span class="pl-pair__similarity">{{ pair.similarity }}%</span>
+                </div>
 
-    <div class="pl-single">
-        <!-- ПЯТЁРОЧКА ОДИНОЧНЫЕ -->
-        {% for product in pyat_only %}
-        <div class="pl-single__item">
-            <div class="pl-single-main-content">
-                <div class="pl-store__label">🔵 Только в Пятёрочке</div>
-                <div class="pl-store__name"> {{ product.name_pyat }} </div>
+                <div class="pl-pair__content">
+                    <!-- ПЯТЁРОЧКА -->
+                    <div
+                        class="pl-store pl-store--pyat {% if pair.cheaper_store_name == 'Пятёрочка' %}is-cheaper{% endif %}">
+                        <div class="pl-store__label">🔵 Пятёрочка</div>
+                        <div class="pl-store__name">{{ pair.name_pyat }}</div>
+                        <div class="pl-store__price pl-store__price--pyat">{{ pair.price_pyat|floatformat:2 }}₽</div>
+                    </div>
+
+                    <!-- МАГНИТ -->
+                    <div
+                        class="pl-store pl-store--magnit {% if pair.cheaper_store_name == 'Магнит' %}is-cheaper{% endif %}">
+                        <div class="pl-store__label">🟠 Магнит</div>
+                        <div class="pl-store__name">{{ pair.name_mag }}</div>
+                        <div class="pl-store__price pl-store__price--magnit">{{ pair.price_mag|floatformat:2 }}₽</div>
+                    </div>
+                </div>
+
+                <div class="pl-pair__footer">
+                    <div class="pl-pair__diff">
+                        Разница: {{ pair.price_difference|floatformat:2 }}₽
+                    </div>
+
+                    <div class="cheaper-badge">{{ pair.cheaper_store_name }}</div>
+
+                    {% if user.is_authenticated %}
+                    <button class="pl-cart-btn {% if pair.id in user_cart_ids %}is-in-cart{% endif %}"
+                        onclick="addToCart({{ pair.id }}, this)">
+                        {% if pair.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+                    </button>
+                    {% endif %}
+                </div>
             </div>
-            {% if user.is_authenticated %}
-            <div class="pl-single-footer">
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ОДИНОЧНЫЕ ТОВАРЫ -->
+    {% if pyat_only or magnit_only %}
+    <div class="pl-section">
+        <h2 class="pl-section__title">📌 Только в одном магазине</h2>
+
+        <div class="pl-single">
+            <!-- ПЯТЁРОЧКА ОДИНОЧНЫЕ -->
+            {% for product in pyat_only %}
+            <div class="pl-single__item">
+                <div class="pl-single-main-content">
+                    <div class="pl-store__label">🔵 Только в Пятёрочке</div>
+                    <div class="pl-store__name"> {{ product.name_pyat }} </div>
+                </div>
+                {% if user.is_authenticated %}
+                <div class="pl-single-footer">
+                    <div class="pl-store__price pl-store__price--pyat">
+                        {{ product.price_pyat|floatformat:2 }}₽
+                    </div>
+                    <button class="pl-cart-btn {% if product.id in user_cart_ids %}is-in-cart{% endif %}"
+                        onclick="addToCart({{ product.id }}, this)">
+                        {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+                    </button>
+                </div>
+                {% else %}
                 <div class="pl-store__price pl-store__price--pyat">
                     {{ product.price_pyat|floatformat:2 }}₽
                 </div>
-                <button class="pl-cart-btn {% if product.id in user_cart_ids %}is-in-cart{% endif %}"
-                    onclick="addToCart({{ product.id }}, this)">
-                    {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
-                </button>
-            </div>
-            {% else %}
-            <div class="pl-store__price pl-store__price--pyat">
-                {{ product.price_pyat|floatformat:2 }}₽
-            </div>
 
-            {% endif %}
-        </div>
-        {% endfor %}
-
-        <!-- МАГНИТ ОДИНОЧНЫЕ -->
-        {% for product in magnit_only %}
-        <div class="pl-single__item">
-            <div class="pl-single-main-content">
-                <div class="pl-store__label">🟠 Только в Магните</div>
-                <div class="pl-store__name">{{ product.name_mag }}</div>
+                {% endif %}
             </div>
+            {% endfor %}
 
-            {% if user.is_authenticated %}
-            <div class="pl-single-footer">
+            <!-- МАГНИТ ОДИНОЧНЫЕ -->
+            {% for product in magnit_only %}
+            <div class="pl-single__item">
+                <div class="pl-single-main-content">
+                    <div class="pl-store__label">🟠 Только в Магните</div>
+                    <div class="pl-store__name">{{ product.name_mag }}</div>
+                </div>
+
+                {% if user.is_authenticated %}
+                <div class="pl-single-footer">
+                    <div class="pl-store__price pl-store__price--magnit">
+                        {{ product.price_mag|floatformat:2 }}₽
+                    </div>
+                    <button class="pl-cart-btn {% if product.id in user_cart_ids %}is-in-cart{% endif %}"
+                        onclick="addToCart({{ product.id }}, this)">
+                        {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
+                    </button>
+                </div>
+                {% else %}
                 <div class="pl-store__price pl-store__price--magnit">
                     {{ product.price_mag|floatformat:2 }}₽
                 </div>
-                <button class="pl-cart-btn {% if product.id in user_cart_ids %}is-in-cart{% endif %}"
-                    onclick="addToCart({{ product.id }}, this)">
-                    {% if product.id in user_cart_ids %}✓ В корзине{% else %}➕ В корзину{% endif %}
-                </button>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="pl-store__price pl-store__price--magnit">
-                {{ product.price_mag|floatformat:2 }}₽
-            </div>
-            {% endif %}
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-{% else %}
-<!-- ПУСТОЕ СОСТОЯНИЕ -->
-<div class="pl-empty">
-    <p class="pl-empty__title">Введите товар для поиска и сравнения цен</p>
-    <p class="pl-empty__text">Примеры: молоко, батон, сосиски, творог, сметана</p>
+    {% else %}
+    <!-- ПУСТОЕ СОСТОЯНИЕ -->
+    <div class="pl-empty">
+        <p class="pl-empty__title">Введите товар для поиска и сравнения цен</p>
+        <p class="pl-empty__text">Примеры: молоко, батон, сосиски, творог, сметана</p>
+    </div>
+    {% endif %}
+
 </div>
-{% endif %}
+
+
+
+
 
 <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+
+    // Элементы страницы
+    const loadingIndicator = document.getElementById('loading-indicator');
+
+    // Интервал проверки статуса (в миллисекундах)
+    const CHECK_INTERVAL = 5000; // 5 секунд
+    let checkInterval = null;
+
+    /**
+     * Проверяет статус парсинга из БД через AJAX
+     */
+    async function checkParsingStatus() {
+        try {
+            const response = await fetch(
+                `{% url 'check_status' %}?q=${encodeURIComponent(query)}`
+            );
+            const data = await response.json();
+
+            console.log('📊 Статус парсинга:', data);
+
+            // Если парсинг завершен (is_parsing = false) - обновляем страницу
+            if (!data.is_parsing) {
+                console.log('✅ Парсинг завершен! Обновляем страницу...');
+                clearInterval(checkInterval);
+                stopLoading();
+
+                // Небольшая задержка перед обновлением
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при проверке статуса:', error);
+        }
+    }
+
+    /**
+     * Показывает индикатор загрузки
+     */
+    function startLoading() {
+        loadingIndicator.classList.add('active');
+        console.log('🔄 Парсинг запущен, показываем индикатор...');
+
+        // Начинаем проверять статус каждые N секунд
+        checkInterval = setInterval(checkParsingStatus, CHECK_INTERVAL);
+
+        // Также проверяем сразу при загрузке
+        checkParsingStatus();
+    }
+
+    /**
+     * Скрывает индикатор загрузки
+     */
+    function stopLoading() {
+        loadingIndicator.classList.remove('active');
+        console.log('✅ Индикатор скрыт');
+    }
+
+    // При загрузке страницы - проверяем нужен ли индикатор
+    document.addEventListener('DOMContentLoaded', function () {
+        // Проверяем есть ли флаг is_searching в контексте
+        const isSearching = loadingIndicator.dataset.isSearching === 'true';
+
+        if (isSearching && query) {
+            console.log('🎯 Парсинг активен, показываем индикатор...');
+            startLoading();
+        } else {
+            console.log('✅ Парсинг неактивен, индикатор не нужен');
+        }
+    });
+
     function addToCart(productId, button) {
         {% if user.is_authenticated %}
         if (!productId) {
@@ -185,14 +273,12 @@
             .then(data => {
                 if (data.status === 'success') {
                     // Меняем внешний вид кнопки
-                    button.classList.add('in-cart');
+                    button.classList.add('is-in-cart');
                     button.textContent = '✓ В корзине';
 
                     // Показываем уведомление
                     showToast(data.message);
 
-                    // Обновляем счётчик корзины
-                    updateCartCount();
                 } else {
                     alert('Ошибка: ' + data.message);
                 }
@@ -231,18 +317,6 @@
             toast.style.animation = 'slideIn 0.3s ease reverse';
             setTimeout(() => toast.remove(), 300);
         }, 2000);
-    }
-
-    function updateCartCount() {
-        fetch('{% url "get_cart_count" %}')
-            .then(response => response.json())
-            .then(data => {
-                const badge = document.getElementById('cartBadge');
-                if (badge) {
-                    badge.textContent = data.cart_count;
-                    badge.style.display = data.cart_count > 0 ? 'flex' : 'none';
-                }
-            });
     }
 </script>
 

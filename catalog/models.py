@@ -1,13 +1,49 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 
 
 class Category(models.Model):
     name = models.CharField("Название категории",
                             max_length=100, unique=True, db_index=True)
+    last_parsed_at = models.DateTimeField(
+        "Последний парсинг",
+        null=True,
+        blank=True,
+        help_text="Время последнего успешного парсинга"
+    )
+    is_parsing = models.BooleanField(
+        "Идет парсинг",
+        default=False,
+        help_text="Флаг текущего статуса парсинга"
+    )
+    created_at = models.DateTimeField("Создано", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлено", auto_now=True)
 
     def __str__(self):
         return self.name
+
+    @property
+    def needs_update(self, hours=24):
+        """
+        Проверяет, нужно ли обновить данные категории
+        По умолчанию обновляет если прошло более 24 часов
+        """
+        if not self.last_parsed_at:
+            # Если никогда не парсилась - нужно обновить
+            return True
+
+        time_diff = timezone.now() - self.last_parsed_at
+        return time_diff > timedelta(hours=hours)
+
+    @property
+    def hours_since_last_parse(self):
+        """Сколько часов прошло с последнего парсинга"""
+        if not self.last_parsed_at:
+            return None
+        time_diff = timezone.now() - self.last_parsed_at
+        return time_diff.total_seconds() / 3600
 
 
 class Product(models.Model):

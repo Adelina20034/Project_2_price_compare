@@ -18,7 +18,7 @@
                 PriceCompare
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button">
                 ☰
             </button>
 
@@ -26,17 +26,15 @@
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a href="{% url 'cart' %}" class="cart-button">
-                            🛒 Корзина
-                            {% if cart_count > 0 %}
-                            <span class="cart-count">{{ cart_count }}</span>
-                            {% endif %}
-                        </a>
+                        <span class="text-white">Привет, <strong>{{ user.username }}</strong>!</span>
                     </li>
 
                     <li class="nav-item">
-                        <span class="text-white">Привет, <strong>{{ user.username }}</strong>!</span>
+                        <a href="{% url 'cart' %}" class="cart-button">
+                            🛒 Корзина
+                        </a>
                     </li>
+
                     <li class="nav-item">
                         <form action="{% url 'logout' %}" method="post" class="d-inline">
                             {% csrf_token %}
@@ -78,6 +76,66 @@
 
     <!-- Bootstrap JS (нужен для мобильного меню и алертов) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggler = document.querySelector('.navbar-toggler');
+            const collapse = document.querySelector('.navbar-collapse');
+            const navbar = document.querySelector('.navbar');
+
+            // ===== TOGGLE МЕНЮ =====
+            toggler.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                collapse.classList.toggle('show');
+                toggler.classList.toggle('active');
+            });
+
+            // ===== ЗАКРЫТЬ МЕНЮ ПРИ КЛИКЕ НА ССЫЛКУ В МЕНЮ =====
+            const navLinks = document.querySelectorAll('.navbar-nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    collapse.classList.remove('show');
+                    toggler.classList.remove('active');
+                });
+            });
+
+            // ===== ЗАКРЫТЬ МЕНЮ ПРИ КЛИКЕ НА КНОПКУ ВЫХОДА =====
+            const logoutBtn = document.querySelector('.btn-logout');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    collapse.classList.remove('show');
+                    toggler.classList.remove('active');
+                });
+            }
+
+            // ===== ⭐ ГЛАВНОЕ: ЗАКРЫТЬ МЕНЮ ПРИ КЛИКЕ ВНЕ NAVBAR =====
+            document.addEventListener('click', (e) => {
+                const isClickInside = navbar.contains(e.target);
+                const isMenuOpen = collapse.classList.contains('show');
+
+                if (!isClickInside && isMenuOpen) {
+                    collapse.classList.remove('show');
+                    toggler.classList.remove('active');
+                }
+            });
+
+            // ===== ЗАКРЫТЬ МЕНЮ ПРИ НАЖАТИИ ESC =====
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && collapse.classList.contains('show')) {
+                    collapse.classList.remove('show');
+                    toggler.classList.remove('active');
+                }
+            });
+
+            // ===== ЗАКРЫТЬ МЕНЮ ПРИ СКРОЛЛЕ =====
+            window.addEventListener('scroll', () => {
+                if (collapse.classList.contains('show')) {
+                    collapse.classList.remove('show');
+                    toggler.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
