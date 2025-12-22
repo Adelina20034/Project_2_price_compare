@@ -7,6 +7,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+from django.utils import timezone
 from urllib.parse import quote
 from fuzzywuzzy import fuzz
 from decimal import Decimal
@@ -47,7 +48,7 @@ def get_driver():
 
 def smart_product_search(query):
     """Основная функция поиска"""
-    logger.info(f"🔍 Запуск умного поиска: '{query}'")
+    logger.info("🔍 Запуск умного поиска: '%s'", query)
 
     driver = get_driver()
     try:
@@ -55,19 +56,19 @@ def smart_product_search(query):
         logger.info("🔵 Начинаем парсинг Пятёрочки...")
         pyat_parser = PyaterochkaParser(driver)
         pyat_products = pyat_parser.scrape_search(query)
-        logger.info(f"✅ Пятёрочка завершена: {len(pyat_products)} товаров")
+        logger.info("✅ Пятёрочка завершена: %s товаров", len(pyat_products))
 
         # 2. Парсим Магнит
         logger.info("🔴 Начинаем парсинг Магнита...")
         magnit_parser = MagnitParser(driver)
         magnit_products = magnit_parser.scrape_search(query)
-        logger.info(f"✅ Магнит завершен: {len(magnit_products)} товаров")
+        logger.info("✅ Магнит завершен: %s товаров", len(magnit_products))
 
         # 3. Сопоставляем результаты
         logger.info("🔀 Сравниваем товары из обоих магазинов...")
         result = smart_compare_products(pyat_products, magnit_products)
-        logger.info(
-            f"✅ Сравнение завершено: пар={len(result['pairs'])}, одиночных={len(result['pyat_single']) + len(result['magnit_single'])}")
+        logger.info("✅ Сравнение завершено: пар=%s, одиночных=%s", len(
+            result['pairs']), len(result['pyat_single']) + len(result['magnit_single']))
         return result
     finally:
         driver.quit()
@@ -82,17 +83,14 @@ class BaseParser(ABC):
     @abstractmethod
     def extract_product_name(self, elem):
         """Извлечь название товара из элемента страницы"""
-        pass
 
     @abstractmethod
     def extract_product_price(self, elem):
         """Извлечь цену товара из элемента страницы"""
-        pass
 
     @abstractmethod
     def scrape_search(self, query):
         """Выполнить поиск и вернуть список товаров"""
-        pass
 
     def add_product(self, name: str, price: Decimal, page: int = 1):
         """Универсальный метод добавления товара"""
@@ -191,7 +189,6 @@ class PyaterochkaParser(BaseParser):
         try:
             encoded_query = quote(query, safe='')
             search_url = f"{self.BASE_URL}?text={encoded_query}"
-            logger.debug(f"🔗 URL поиска: {search_url}")
 
             self.driver.get(search_url)
             time.sleep(5)
@@ -204,19 +201,19 @@ class PyaterochkaParser(BaseParser):
                 )
                 logger.info("✅ Товары загружены (Пятёрочка)")
             except Exception as e:
-                logger.warning(f"❌ Товары не загружены (Пятёрочка): {str(e)}")
+                logger.warning("❌ Товары не загружены (Пятёрочка): %s", str(e))
                 return []
 
             time.sleep(2)
             self._scroll_and_load()
             self._parse_products()
 
-            logger.info(
-                f"✅ ИТОГО (Пятёрочка): Спарсено {len(self.products)} товаров")
+            logger.info("✅ ИТОГО (Пятёрочка): Спарсено %s товаров",
+                        len(self.products))
             return self.products
 
         except Exception as e:
-            logger.error(f"❌ ОШИБКА Пятёрочки: {str(e)}", exc_info=True)
+            logger.error("❌ ОШИБКА Пятёрочки: %s", str(e), exc_info=True)
             return []
 
     def _scroll_and_load(self):
@@ -241,7 +238,7 @@ class PyaterochkaParser(BaseParser):
             scroll_attempts += 1
 
         logger.info(
-            f"✅ Прокрутка завершена. Всего товаров: {current_count}, потребовалось {scroll_attempts} прокруток")
+            "✅ Прокрутка завершена. Всего товаров: %s, потребовалось %s прокруток", current_count, scroll_attempts)
 
     def _parse_products(self):
         """Парсит товары со страницы"""
@@ -259,20 +256,20 @@ class PyaterochkaParser(BaseParser):
             try:
                 name = self.extract_product_name(elem)
                 if not name:
-                    logger.debug(f"  ⚠️ [{i+1}] Название не найдено")
+                    logger.debug("  ⚠️ [%s] Название не найдено", i+1)
                     continue
 
                 price = self.extract_product_price(elem)
                 if not price:
                     logger.debug(
-                        f"  ⚠️ [{i+1}] {name[:40]}... - цена не найдена")
+                        "  ⚠️ [%s] %s... - цена не найдена", i+1, name[:40])
                     continue
 
                 if self.add_product(name, price, page=1):
-                    logger.debug(f"  ✅ [{i+1}] {name[:50]}... - {price}₽")
+                    logger.debug("  ✅ [%s] %s... - %s₽", i+1, name[:50], price)
 
             except Exception as e:
-                logger.debug(f"  ⚠️ Ошибка при парсинге товара: {str(e)}")
+                logger.debug("  ⚠️ Ошибка при парсинге товара: %s", str(e))
                 continue
 
 
@@ -319,28 +316,27 @@ class MagnitParser(BaseParser):
         current_page = 1
         try:
             encoded_query = quote(query, safe='')
-            logger.debug(f"🔗 Запрос: '{encoded_query}'")
 
             while True:
-                logger.info(f"📄 Парсим страницу {current_page} Магнита...")
+                logger.info("📄 Парсим страницу %s Магнита...", current_page)
                 url = f"{self.BASE_URL}?term={encoded_query}&page={current_page}"
 
                 self.driver.get(url)
                 time.sleep(self.PAGE_WAIT)
 
                 if not self._parse_page():
-                    logger.debug(f"📍 Достигнута последняя страница Магнита")
+                    logger.debug("📍 Достигнута последняя страница Магнита")
                     break
 
                 current_page += 1
                 time.sleep(1)
 
-            logger.info(
-                f"✅ ИТОГО (Магнит): Спарсено {len(self.products)} товаров")
+            logger.info("✅ ИТОГО (Магнит): Спарсено %s товаров",
+                        len(self.products))
             return self.products
 
         except Exception as e:
-            logger.error(f"❌ ОШИБКА Магнита: {str(e)}", exc_info=True)
+            logger.error("❌ ОШИБКА Магнита: %s", str(e), exc_info=True)
             return []
 
     def _parse_page(self) -> bool:
@@ -356,62 +352,37 @@ class MagnitParser(BaseParser):
             logger.debug("⚠️ Товары не найдены на этой странице")
             return False
 
-        logger.debug(f"📊 Найдено товаров на странице: {len(product_elements)}")
+        logger.debug("📊 Найдено товаров на странице: %s",
+                     len(product_elements))
 
         for i, elem in enumerate(product_elements):
             try:
                 name = self.extract_product_name(elem)
                 if not name:
-                    logger.debug(f"  ⚠️ [{i+1}] Название не найдено")
+                    logger.debug("  ⚠️ [%s] Название не найдено", i+1)
                     continue
 
                 price = self.extract_product_price(elem)
                 if not price:
-                    logger.debug(f"  ✅ [{i+1}] {name[:50]}... - {price}₽")
+                    logger.debug(
+                        "  ⚠️ [%s] %s... - цена не найдена", i+1, name[:40])
                     continue
 
                 if self.add_product(name, price, page=self.products[-1]['page'] + 1 if self.products else 1):
-                    logger.debug(f"  ✅ {name[:50]}... - {price}₽")
+                    logger.debug("  ✅ [%s] %s... - %s₽", i+1, name[:50], price)
 
             except Exception as e:
-                logger.debug(f"  ⚠️ Ошибка при парсинге: {str(e)[:50]}")
+                logger.debug("  ⚠️ Ошибка при парсинге: %s", str(e))
                 continue
 
         return True
 
 
-def smart_compare_products(
-    pyat_products: list[dict],
-    magnit_products: list[dict],
-    similarity_threshold: int = 75
-) -> dict:
-    """
-    Умное сравнение товаров из двух магазинов
-
-    Args:
-        pyat_products: Товары из Пятёрочки
-        magnit_products: Товары из Магнита
-        similarity_threshold: Минимальный % сходства для пары (0-100)
-
-    Returns:
-        {
-            'pairs': [...],        # Товары с парой
-            'pyat_single': [...],  # Только в Пятёрочке
-            'magnit_single': [...] # Только в Магните
-        }
-    """
-    logger.info(
-        f"🔍 СРАВНЕНИЕ ТОВАРОВ: {len(pyat_products)} из Пятёрочки vs {len(magnit_products)} из Магнита")
-
+def _find_pairs(pyat_products, magnit_products, similarity_threshold):
     pairs = []
+    pairs_found = 0
     used_pyat_indices = set()  # Индексы товаров Пятёрочки, которые нашли пару
     used_magnit_indices = set()  # Индексы товаров Магнита, которые нашли пару
-
-    # НАХОДИМ ПАРЫ
-    logger.info("🔍 Ищем пары товаров...")
-    pairs_found = 0
-
-    # Для каждого товара из Пятёрочки
     for pyat_idx, pyat_prod in enumerate(pyat_products):
 
         best_match = None
@@ -453,10 +424,40 @@ def smart_compare_products(
             used_magnit_indices.add(best_magnit_idx)
             pairs_found += 1
 
-            logger.debug(
-                f"  ✅ Пара {pairs_found}: {pyat_prod['name'][:40]}... ↔ {best_match['name'][:40]}... ({best_similarity}%)")
+            logger.debug("  ✅ Пара %s: %s... ↔ %s... (%s%%)", pairs_found,
+                         pyat_prod['name'][:40], best_match['name'][:40], best_similarity)
+    logger.info("✅ Найдено пар: %s", pairs_found)
+    return pairs, used_pyat_indices, used_magnit_indices
 
-    logger.info(f"✅ Найдено пар: {pairs_found}")
+
+def smart_compare_products(
+    pyat_products: list[dict],
+    magnit_products: list[dict],
+    similarity_threshold: int = 75
+) -> dict:
+    """
+    Умное сравнение товаров из двух магазинов
+
+    Args:
+        pyat_products: Товары из Пятёрочки
+        magnit_products: Товары из Магнита
+        similarity_threshold: Минимальный % сходства для пары (0-100)
+
+    Returns:
+        {
+            'pairs': [...],        # Товары с парой
+            'pyat_single': [...],  # Только в Пятёрочке
+            'magnit_single': [...] # Только в Магните
+        }
+    """
+    logger.info("🔍 СРАВНЕНИЕ ТОВАРОВ: %s из Пятёрочки vs %s из Магнита", len(
+        pyat_products), len(magnit_products))
+
+    # НАХОДИМ ПАРЫ
+    logger.info("🔍 Ищем пары товаров...")
+    pairs, used_pyat_indices, used_magnit_indices = _find_pairs(
+        pyat_products, magnit_products, similarity_threshold)
+
     # НАХОДИМ ОДИНОЧНЫЕ ТОВАРЫ
     logger.info("🔎 Ищем товары без пары...")
 
@@ -464,21 +465,21 @@ def smart_compare_products(
     for idx, prod in enumerate(pyat_products):
         if idx not in used_pyat_indices:
             pyat_single.append(prod)
-            logger.debug(f"  📌 Пятёрочка (нет пары): {prod['name'][:50]}...")
+            logger.debug("  📌 Пятёрочка (нет пары): %s...", prod['name'][:50])
 
     magnit_single = []
     for idx, prod in enumerate(magnit_products):
         if idx not in used_magnit_indices:
             magnit_single.append(prod)
-            logger.debug(f"  📌 Магнит (нет пары): {prod['name'][:50]}...")
+            logger.debug("  📌 Магнит (нет пары): %s...", prod['name'][:50])
 
     # СОРТИРУЕМ ПАРЫ ПО СХОДСТВУ
     pairs.sort(key=lambda x: x['similarity'], reverse=True)
 
-    logger.info(f"📊 ИТОГИ СРАВНЕНИЯ:")
-    logger.info(f"   ✅ Пар: {len(pairs)}")
-    logger.info(f"   📌 Только в Пятёрочке: {len(pyat_single)}")
-    logger.info(f"   📌 Только в Магните: {len(magnit_single)}")
+    logger.info("📊 ИТОГИ СРАВНЕНИЯ:")
+    logger.info("   ✅ Пар: %s", len(pairs))
+    logger.info("   📌 Только в Пятёрочке: %s", len(pyat_single))
+    logger.info("   📌 Только в Магните: %s", len(magnit_single))
 
     return {
         'pairs': pairs,
@@ -487,25 +488,80 @@ def smart_compare_products(
     }
 
 
-def save_results_to_db(res, query):
-    """
-    Сохраняет результаты парсинга в базу данных (Product)
-    """
-    from django.utils import timezone
-
-    logger.info(f"💾 Начинаем сохранение результатов в БД для '{query}'...")
-
-    category: Category
-    category = Category.objects.get(name=query.capitalize())
-
+def _save_single_products_to_db(single_products, store_name, category):
     stats = {
         'created': 0,
         'updated': 0,
         'errors': 0,
         'categories_added': 0
     }
-    logger.info("📊 Обработка ПАРНЫХ ТОВАРОВ...")
-    for pair in res.get('pairs', []):
+    for item in single_products:
+        try:
+            name = item.get('name')
+            price = item.get('price')
+            try:
+                if store_name == 'Пятёрочка':
+                    product = Product.objects.get(
+                        name_pyat=name,
+                        name_mag__isnull=True,
+                    )
+                else:
+                    product = Product.objects.get(
+                        name_mag=name,
+                        name_pyat__isnull=True,
+                    )
+
+                if store_name == 'Пятёрочка' and product.price_pyat != price:
+                    product.price_pyat = price
+                    product.save()
+                    stats['updated'] += 1
+                    logger.debug("    🔄 Обновлена цена")
+                elif store_name == 'Магнит' and product.price_mag != price:
+                    product.price_mag = price
+                    product.save()
+                    stats['updated'] += 1
+                    logger.debug("    🔄 Обновлена цена")
+
+            except Product.DoesNotExist:
+                if store_name == 'Пятёрочка':
+                    product, _ = Product.objects.get_or_create(
+                        name_pyat=name,
+                        price_pyat=price,
+                        name_mag=None,
+                        price_mag=None,
+                        created_at=timezone.now()
+                    )
+                else:
+                    product, _ = Product.objects.get_or_create(
+                        name_mag=name,
+                        price_mag=price,
+                        name_pyat=None,
+                        price_pyat=None,
+                        created_at=timezone.now()
+                    )
+                stats['created'] += 1
+                logger.info("  ✨ НОВЫЙ (%s): %s...",
+                            store_name, name[:50])
+
+            if not product.categories.filter(id=category.id).exists():
+                product.categories.add(category)
+                stats['categories_added'] += 1
+
+        except Exception as e:
+            stats['errors'] += 1
+            logger.error(
+                "  ❌ Ошибка сохранения товара %s: %s", store_name, str(e))
+    return stats
+
+
+def _save_pair_to_db(pairs, category):
+    stats = {
+        'created': 0,
+        'updated': 0,
+        'errors': 0,
+        'categories_added': 0
+    }
+    for pair in pairs:
         try:
             name_pyat = pair.get('pyat').get('name')
             name_mag = pair.get('magnit').get('name')
@@ -516,8 +572,8 @@ def save_results_to_db(res, query):
                     name_pyat=name_pyat,
                     name_mag=name_mag,
                 )
-                logger.debug(
-                    f"  ✓ Найдено: {name_pyat[:50]}... / {name_mag[:50]}...")
+                logger.debug("  ✓ Найдено: %s... / %s...",
+                             name_pyat[:50], name_mag[:50])
 
                 price_pyat_changed = product.price_pyat != price_pyat
                 price_mag_changed = product.price_mag != price_mag
@@ -531,7 +587,7 @@ def save_results_to_db(res, query):
                 if price_pyat_changed or price_mag_changed:
                     product.save()
                     stats['updated'] += 1
-                    logger.debug(f"    🔄 Обновлены цены")
+                    logger.debug("    🔄 Обновлены цены")
 
             except Product.DoesNotExist:
                 product, _ = Product.objects.get_or_create(
@@ -543,8 +599,8 @@ def save_results_to_db(res, query):
                     created_at=timezone.now()
                 )
                 stats['created'] += 1
-                logger.info(
-                    f"  ✨ НОВЫЙ (пара): {name_pyat[:50]}... / {name_mag[:50]}...")
+                logger.info("  ✨ НОВЫЙ (пара): %s... / %s...",
+                            name_pyat[:50], name_mag[:50])
 
             if not product.categories.filter(id=category.id).exists():
                 product.categories.add(category)
@@ -552,82 +608,40 @@ def save_results_to_db(res, query):
 
         except Exception as e:
             stats['errors'] += 1
-            logger.error(f"  ❌ Ошибка сохранения парного товара: {str(e)}")
+            logger.error(
+                "  ❌ Ошибка сохранения парного товара: %s", str(e))
+    return stats
+
+
+def save_results_to_db(res, query):
+    """
+    Сохраняет результаты парсинга в базу данных (Product)
+    """
+    logger.info("💾 Начинаем сохранение результатов в БД для '%s'...", query)
+
+    category: Category
+    category = Category.objects.get(name=query.capitalize())
+
+    logger.info("📊 Обработка ПАРНЫХ ТОВАРОВ...")
+    stats_pair = _save_pair_to_db(res.get('pairs', []), category)
 
     logger.info("🏪 Обработка товаров ТОЛЬКО В ПЯТЁРОЧКЕ...")
-    for item in res.get('pyat_single', []):
-        try:
-            name_pyat = item.get('name')
-            price_pyat = item.get('price')
-            try:
-                product = Product.objects.get(
-                    name_pyat=name_pyat,
-                    name_mag__isnull=True,
-                )
-
-                if product.price_pyat != price_pyat:
-                    product.price_pyat = price_pyat
-                    product.save()
-                    stats['updated'] += 1
-                    logger.debug(f"    🔄 Обновлена цена")
-
-            except Product.DoesNotExist:
-                product, _ = Product.objects.get_or_create(
-                    name_pyat=name_pyat,
-                    price_pyat=price_pyat,
-                    name_mag=None,
-                    price_mag=None,
-                    created_at=timezone.now()
-                )
-                stats['created'] += 1
-                logger.info(f"  ✨ НОВЫЙ (Пятёрочка): {name_pyat[:50]}...")
-
-            if not product.categories.filter(id=category.id).exists():
-                product.categories.add(category)
-                stats['categories_added'] += 1
-
-        except Exception as e:
-            stats['errors'] += 1
-            logger.error(f"  ❌ Ошибка сохранения товара Пятёрочки: {str(e)}")
+    stats_pyat = _save_single_products_to_db(
+        res.get('pyat_single', []), "Пятёрочка", category)
 
     logger.info("🏪 Обработка товаров ТОЛЬКО В МАГНИТЕ...")
-    for item in res.get('magnit_single', []):
-        try:
-            name_mag = item.get('name')
-            price_mag = item.get('price')
-            try:
-                product = Product.objects.get(
-                    name_pyat__isnull=True,
-                    name_mag=name_mag,
-                )
+    stats_mag = _save_single_products_to_db(
+        res.get('magnit_single', []), "Магнит", category)
 
-                if product.price_mag != price_mag:
-                    product.price_mag = price_mag
-                    product.save()
-                    stats['updated'] += 1
-                    logger.debug(f"    🔄 Обновлена цена")
+    stats = {
+        'created': stats_pair['created'] + stats_pyat['creates'] + stats_mag['created'],
+        'updated': stats_pair['updated'] + stats_pyat['updated'] + stats_mag['updated'],
+        'errors': stats_pair['errors'] + stats_pyat['errors'] + stats_mag['errors'],
+        'categories_added': stats_pair['categories_added'] + stats_pyat['categories_added'] + stats_mag['categories_added']
+    }
 
-            except Product.DoesNotExist:
-                product, _ = Product.objects.get_or_create(
-                    name_pyat=None,
-                    price_pyat=None,
-                    name_mag=name_mag,
-                    price_mag=price_mag,
-                    created_at=timezone.now()
-                )
-                stats['created'] += 1
-                logger.info(f"  ✨ НОВЫЙ (Магнит): {name_mag[:50]}...")
-
-            if not product.categories.filter(id=category.id).exists():
-                product.categories.add(category)
-                stats['categories_added'] += 1
-
-        except Exception as e:
-            stats['errors'] += 1
-            logger.error(f"  ❌ Ошибка сохранения товара Магнита: {str(e)}")
-
-    logger.info(f"\n✨ СТАТИСТИКА СОХРАНЕНИЯ:")
-    logger.info(f"   ✨ Создано новых: {stats['created']}")
-    logger.info(f"   🔄 Обновлено: {stats['updated']}")
-    logger.info(f"   📁 Добавлено в категории: {stats['categories_added']}")
-    logger.info(f"   ❌ Ошибок: {stats['errors']}")
+    logger.info("\n✨ СТАТИСТИКА СОХРАНЕНИЯ:")
+    logger.info("   ✨ Создано новых: %s", stats['created'])
+    logger.info("   🔄 Обновлено: %s", stats['updated'])
+    logger.info("   📁 Добавлено в категории: %s", stats['categories_added'])
+    logger.info("   ❌ Ошибок: %s", stats['errors'])

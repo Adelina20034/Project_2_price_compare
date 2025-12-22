@@ -1,12 +1,13 @@
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import AnonymousUser
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from decimal import Decimal
 from catalog.views import product_list
 from catalog.models import Product, Category
 
+
 class TestCatalogModelsUnit(TestCase):
-    
+
     def test_category_str_method(self):
         """Unit-тест: Метод __str__ у категории"""
         category = Category.objects.create(name="Молочные продукты")
@@ -36,14 +37,14 @@ class TestCatalogModelsUnit(TestCase):
         # Только в Пятерочке
         p1 = Product(name_pyat="X", price_pyat=10)
         self.assertFalse(p1.has_both)
-        
+
         # В обоих
         p2 = Product(name_pyat="X", price_pyat=10, name_mag="Y", price_mag=12)
         self.assertTrue(p2.has_both)
 
 
 class TestCatalogViewsUnit(TestCase):
-    
+
     def setUp(self):
         self.factory = RequestFactory()
 
@@ -51,7 +52,7 @@ class TestCatalogViewsUnit(TestCase):
     def test_product_list_with_query(self, mock_search):
         """Unit-тест: Функция product_list вызывает поиск"""
         # Настраиваем Mock так, чтобы он возвращал структуру, которую ждет view
-        # В твоем view результат парсинга сохраняется в БД, 
+        # В твоем view результат парсинга сохраняется в БД,
         # поэтому mock_search может возвращать просто словарь для отчета или None,
         # если логика сохранения внутри view.
         # Допустим, view ожидает словарь results:
@@ -60,21 +61,21 @@ class TestCatalogViewsUnit(TestCase):
             'pyat_single': [],
             'magnit_single': []
         }
-        
+
         request = self.factory.get('/?q=яблоко')
         request.user = AnonymousUser()
-        
+
         # Важно: если во view есть логика сохранения в БД, нам нужно замокать и её,
         # или создать Category заранее, если view пытается её создать.
         # Создадим категорию на случай, если view пытается получить её из БД
         Category.objects.get_or_create(name="Яблоко")
 
         # Если во view используется render, то тест пройдет.
-        # Если view вызывает save_results_to_db, лучше замокать и её, 
+        # Если view вызывает save_results_to_db, лучше замокать и её,
         # но для простого теста вьюхи достаточно проверить вызов поиска.
-        
+
         response = product_list(request)
-        
+
         self.assertEqual(response.status_code, 200)
         mock_search.assert_called_once_with('яблоко')
 
@@ -83,8 +84,8 @@ class TestCatalogViewsUnit(TestCase):
         """Unit-тест: При коротком запросе поиск НЕ вызывается"""
         request = self.factory.get('/?q=hi')
         request.user = AnonymousUser()
-        
+
         response = product_list(request)
-        
+
         self.assertEqual(response.status_code, 200)
         mock_search.assert_not_called()

@@ -1,7 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+
+User = get_user_model()
 
 
 class Category(models.Model):
@@ -25,11 +27,12 @@ class Category(models.Model):
         return self.name
 
     @property
-    def needs_update(self, hours=24):
+    def needs_update(self):
         """
         Проверяет, нужно ли обновить данные категории
         По умолчанию обновляет если прошло более 24 часов
         """
+        hours = 24
         if not self.last_parsed_at:
             # Если никогда не парсилась - нужно обновить
             return True
@@ -107,7 +110,7 @@ class Product(models.Model):
         """Название магазина который дешевле"""
         if self.cheaper_store == 'pyat':
             return 'Пятёрочка'
-        elif self.cheaper_store == 'mag':
+        if self.cheaper_store == 'mag':
             return 'Магнит'
         return None
 
