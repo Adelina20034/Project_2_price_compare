@@ -6,15 +6,27 @@ from django.db.models import Q
 from django.utils import timezone
 import threading
 import logging
-
+import sys
 from scraping.scrapers import smart_product_search, save_results_to_db
 from .models import Category, Product, CartItem
 
+
+# --- Настройка логирования---
 logger = logging.getLogger(__name__)
+# Очищаем старые хендлеры, если они есть (чтобы не дублировать логи)
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter(
+    '[%(levelname)s] %(asctime)s %(name)s:%(lineno)d - %(message)s'
+))
+logger.addHandler(handler)
+logger.setLevel(logging.INFO) 
+# -----------------------------------------------
 
 # Константа для интервала обновления (в часах)
 REPARSE_INTERVAL_HOURS = 24
-
 
 @require_http_methods(["GET"])
 def check_parsing_status(request):

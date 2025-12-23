@@ -1,91 +1,173 @@
-from django.test import TestCase, RequestFactory
-from django.contrib.auth.models import AnonymousUser
-from unittest.mock import patch
-from decimal import Decimal
-from catalog.views import product_list
-from catalog.models import Product, Category
+import json
+from unittest.mock import patch, MagicMock
+from django.test import TestCase, RequestFactory, Client
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+from catalog.models import Product, Category, CartItem
 
+User = get_user_model()
 
-class TestCatalogModelsUnit(TestCase):
+class TestCatalogModels(TestCase):
+    """Тесты для моделей каталога"""
+    
+    def setUp(self):
+        # Создаем категорию для использования в тестах
+        self.category = Category.objects.create(name="Молочные продукты")
+        
+    def test_category_str(self):
+        """Проверка строкового представления категории"""
+        self.assertEqual(str(self.category), "Молочные продукты")
 
-    def test_category_str_method(self):
-        """Unit-тест: Метод __str__ у категории"""
-        category = Category.objects.create(name="Молочные продукты")
-        self.assertEqual(str(category), "Молочные продукты")
-
-    def test_product_str_method_pyat(self):
-        """Unit-тест: __str__ если товар только в Пятерочке"""
-        product = Product(name_pyat="Молоко")
-        self.assertEqual(str(product), "Молоко")
-
-    def test_product_str_method_both(self):
-        """Unit-тест: __str__ приоритет (Пятерочка)"""
-        product = Product(name_pyat="Молоко Пят", name_mag="Молоко Маг")
-        self.assertEqual(str(product), "Молоко Пят")
-
-    def test_cheaper_store_property(self):
-        """Unit-тест: Определение где дешевле"""
-        product = Product(
-            name_pyat="Test", price_pyat=Decimal("100.00"),
-            name_mag="Test", price_mag=Decimal("90.00")
-        )
-        self.assertEqual(product.cheaper_store, 'mag')
-        self.assertEqual(product.cheaper_store_name, 'Магнит')
-
-    def test_has_both_property(self):
-        """Unit-тест: Свойство has_both"""
-        # Только в Пятерочке
-        p1 = Product(name_pyat="X", price_pyat=10)
+    def test_product_properties(self):
+        """Проверка вычисляемых свойств продукта"""
+        
+        # 1. Товар только в Пятерочке
+        p1 = Product.objects.create(name_pyat="Молоко Простоквашино", price_pyat=50)
+        self.assertTrue(p1.has_pyat)
+        self.assertFalse(p1.has_mag)
         self.assertFalse(p1.has_both)
+        self.assertEqual(p1.main_name, "Молоко Простоквашино")
 
-        # В обоих
-        p2 = Product(name_pyat="X", price_pyat=10, name_mag="Y", price_mag=12)
+        # 2. Товар в обоих магазинах
+        p2 = Product.objects.create(
+            name_pyat="Сыр Российский", price_pyat=100,
+            name_mag="Сыр Российский Магнит", price_mag=90
+        )
         self.assertTrue(p2.has_both)
+        # Разница: 100 - 90 = 10
+        self.assertEqual(p2.price_difference, 10.0)
+        # Дешевле в магните ('mag')
+        self.assertEqual(p2.cheaper_store, 'mag')
+
+    def test_cart_item_creation(self):
+        """Проверка создания элемента корзины"""
+        user = User.objects.create_user(username='testuser_model', password='password')
+        product = Product.objects.create(name_pyat="Хлеб Бородинский")
+        cart_item = CartItem.objects.create(user=user, product=product, quantity=2)
+        
+        self.assertEqual(cart_item.quantity, 2)
+        self.assertEqual(cart_item.user, user)
+        self.assertEqual(cart_item.product, product)
 
 
-class TestCatalogViewsUnit(TestCase):
-
+class TestCatalogViews(TestCase):
+    """Тесты для представлений (views) каталога"""
+    
     def setUp(self):
         self.factory = RequestFactory()
-
+        # Создаем пользователя и логиним его
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.client = Client()
+        self.client.force_login(self.user)
+        
+    @patch('catalog.views.threading.Thread')
     @patch('catalog.views.smart_product_search')
-    def test_product_list_with_query(self, mock_search):
-        """Unit-тест: Функция product_list вызывает поиск"""
-        # Настраиваем Mock так, чтобы он возвращал структуру, которую ждет view
-        # В твоем view результат парсинга сохраняется в БД,
-        # поэтому mock_search может возвращать просто словарь для отчета или None,
-        # если логика сохранения внутри view.
-        # Допустим, view ожидает словарь results:
-        mock_search.return_value = {
-            'pairs': [],
-            'pyat_single': [],
-            'magnit_single': []
-        }
+    def test_product_list_search_trigger(self, mock_search, mock_thread):
+        """Проверяем, что при поиске создается категория и запускается фоновый поток парсинга"""
+        
+        # Настройка мока для потока
+        mock_thread_instance = MagicMock()
+        mock_thread.return_value = mock_thread_instance
 
-        request = self.factory.get('/?q=яблоко')
-        request.user = AnonymousUser()
-
-        # Важно: если во view есть логика сохранения в БД, нам нужно замокать и её,
-        # или создать Category заранее, если view пытается её создать.
-        # Создадим категорию на случай, если view пытается получить её из БД
-        Category.objects.get_or_create(name="Яблоко")
-
-        # Если во view используется render, то тест пройдет.
-        # Если view вызывает save_results_to_db, лучше замокать и её,
-        # но для простого теста вьюхи достаточно проверить вызов поиска.
-
-        response = product_list(request)
-
+        query = 'Яблоки' 
+        response = self.client.get(reverse('product_list'), {'q': query})
+        
         self.assertEqual(response.status_code, 200)
-        mock_search.assert_called_once_with('яблоко')
+        
+        # Проверяем, что категория создалась в БД (вьюха делает capitalize(), поэтому 'Яблоки')
+        self.assertTrue(Category.objects.filter(name='Яблоки').exists())
+        
+        # Проверяем, что был создан и запущен поток
+        self.assertTrue(mock_thread.called)
+        mock_thread_instance.start.assert_called_once()
 
+    @patch('catalog.views.threading.Thread')
     @patch('catalog.views.smart_product_search')
-    def test_product_list_short_query(self, mock_search):
-        """Unit-тест: При коротком запросе поиск НЕ вызывается"""
-        request = self.factory.get('/?q=hi')
-        request.user = AnonymousUser()
+    def test_product_list_context(self, mock_search, mock_thread):
+        """Проверка контекста страницы при поиске существующего товара"""
+        
+        # Мокаем поток, чтобы он не запускался реально
+        mock_thread.return_value = MagicMock()
 
-        response = product_list(request)
-
+        # 1. Создаем товар с русским именем
+        Product.objects.create(name_pyat="Зеленое Яблоко", price_pyat=10)
+        
+        # 2. Выполняем поиск по слову "Яблоко"
+        response = self.client.get(reverse('product_list'), {'q': 'Яблоко'})
+        
         self.assertEqual(response.status_code, 200)
-        mock_search.assert_not_called()
+        self.assertIn('total_products', response.context)
+
+    def test_add_to_cart_ajax(self):
+        """Тест добавления в корзину через POST запрос (AJAX)"""
+        product = Product.objects.create(name_pyat="Масло Сливочное", price_pyat=120)
+        
+        response = self.client.post(reverse('add_to_cart'), {
+            'product_id': product.id,
+            'quantity': 3
+        })
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Проверяем JSON ответ
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 'success')
+        
+        # Проверяем, что товар реально добавился в базу
+        item = CartItem.objects.get(user=self.user, product=product)
+        self.assertEqual(item.quantity, 3)
+
+    def test_cart_view_calculations(self):
+        """Тест правильности расчетов итоговой суммы в корзине"""
+        
+        # Товар 1: 100р (Пят) vs 110р (Маг)
+        p1 = Product.objects.create(
+            name_pyat="Гречка", price_pyat=100, 
+            name_mag="Гречка Экстра", price_mag=110
+        )
+        # Товар 2: 50р (Пят) vs 40р (Маг)
+        p2 = Product.objects.create(
+            name_pyat="Рис", price_pyat=50, 
+            name_mag="Рис", price_mag=40
+        )
+        
+        # Добавляем в корзину: 1 шт первого, 2 шт второго
+        CartItem.objects.create(user=self.user, product=p1, quantity=1)
+        CartItem.objects.create(user=self.user, product=p2, quantity=2)
+        
+        response = self.client.get(reverse('cart'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Расчет Пятерочка: (100 * 1) + (50 * 2) = 100 + 100 = 200
+        # Расчет Магнит: (110 * 1) + (40 * 2) = 110 + 80 = 190
+        
+        self.assertEqual(response.context['pyat_total'], "200.00")
+        self.assertEqual(response.context['mag_total'], "190.00")
+        
+        # Магнит (190) дешевле Пятерочки (200)
+        self.assertEqual(response.context['cheaper_store'], 'Магнит')
+
+    def test_remove_from_cart(self):
+        """Тест удаления товара из корзины"""
+        p = Product.objects.create(name_pyat="Товар для удаления")
+        item = CartItem.objects.create(user=self.user, product=p, quantity=1)
+        
+        # Отправляем POST запрос на удаление
+        response = self.client.post(reverse('remove_from_cart', args=[item.id]))
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Проверяем, что объект удален из базы
+        self.assertFalse(CartItem.objects.filter(id=item.id).exists())
+
+    def test_clear_cart(self):
+        """Тест полной очистки корзины"""
+        p = Product.objects.create(name_pyat="Случайный товар")
+        CartItem.objects.create(user=self.user, product=p)
+        
+        response = self.client.post(reverse('clear_cart'))
+        
+        self.assertEqual(response.status_code, 200)
+        
+        # Проверяем, что корзина пользователя пуста
+        self.assertEqual(CartItem.objects.filter(user=self.user).count(), 0)
