@@ -1,6 +1,6 @@
 import unittest
 from decimal import Decimal
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from bs4 import BeautifulSoup
 from scraping.scrapers import PyaterochkaParser, MagnitParser, BaseParser, smart_compare_products
 
@@ -9,7 +9,6 @@ class TestPyaterochkaParser(unittest.TestCase):
 
     def setUp(self):
         """Запускается перед каждым тестом"""
-        # ИСПРАВЛЕНИЕ 1: Убираем mock_store, передаем только driver
         self.mock_driver = MagicMock()
         self.parser = PyaterochkaParser(self.mock_driver)
 
@@ -26,7 +25,7 @@ class TestPyaterochkaParser(unittest.TestCase):
         self.assertEqual(price, Decimal('150.50'))
 
     def test_extract_price_single_pair(self):
-        """Проверка, если только одна цена"""
+        """Проверка, если только одна цена (без старой цены)"""
         html = "<div><span>99</span><span>90</span></div>"
         elem = BeautifulSoup(html, 'html.parser')
         price = self.parser.extract_product_price(elem)
@@ -47,11 +46,20 @@ class TestPyaterochkaParser(unittest.TestCase):
         name = self.parser.extract_product_name(elem)
         self.assertEqual(name, "Хлеб Бородинский нарезка 400г")
 
+    def test_parser_handles_empty_page(self):
+        """Парсер не падает, если сайт пустой"""
+        mock_driver = MagicMock()
+        mock_driver.page_source = "<html></html>"  # Пустая страница
+        
+        parser = PyaterochkaParser(mock_driver)
+        products = parser.scrape_search('пустой запрос')
+        
+        self.assertEqual(len(products), 0)  # Возвращает пустой список, не падает
+        self.assertIsInstance(products, list)
 
 class TestMagnitParser(unittest.TestCase):
 
     def setUp(self):
-        # ИСПРАВЛЕНИЕ 1: Убираем mock_store
         self.mock_driver = MagicMock()
         self.parser = MagnitParser(self.mock_driver)
 
@@ -107,11 +115,8 @@ class TestSmartCompare(unittest.TestCase):
         self.assertIn('Яблоки', pair['pyat']['name'])
         self.assertIn('Яблоки', pair['magnit']['name'])
 
-        # ИСПРАВЛЕНИЕ 2: Ключа 'cheaper' в твоем новом коде scraper.py НЕТ.
-        # Удаляем эту проверку, либо проверяем цены напрямую.
-        # self.assertEqual(pair['cheaper'], 'Магнит') <-- УДАЛИЛИ
 
-        # Вместо этого проверим цены, чтобы убедиться, что логика сравнения возможна
+        # проверим цены, чтобы убедиться, что логика сравнения возможна
         self.assertTrue(pair['price_mag'] < pair['price_pyat'])  # 90 < 100
 
         self.assertEqual(len(result['pyat_single']), 1)
@@ -120,6 +125,34 @@ class TestSmartCompare(unittest.TestCase):
         self.assertEqual(len(result['magnit_single']), 1)
         self.assertEqual(result['magnit_single'][0]['name'], 'Масло Сливочное')
 
+    # 🆕 НОВЫЙ ТЕСТ 1: Пустые списки
+    def test_smart_compare_empty_lists(self):
+        """Что происходит, если магазины пустые?"""
+        result = smart_compare_products([], [], similarity_threshold=50)
+        self.assertEqual(len(result['pairs']), 0)
+        self.assertEqual(len(result['pyat_single']), 0)
+        self.assertEqual(len(result['magnit_single']), 0)
+    
+    # 🆕 НОВЫЙ ТЕСТ 2: Сохранение в БД
+    @patch('catalog.models.Category.objects.get')
+    @patch('catalog.models.Product.objects.get_or_create')
+    def test_save_results_to_db(self, mock_product, mock_category):
+        """Проверяем сохранение результатов в базу"""
+        mock_cat = MagicMock()
+        mock_category.return_value = mock_cat
+        
+        result = {
+            'pairs': [{'pyat': {'name': 'Молоко'}, 'magnit': {'name': 'Молоко'}}],
+            'pyat_single': [{'name': 'Хлеб'}],
+            'magnit_single': []
+        }
+        
+        from scraping.scrapers import save_results_to_db
+        save_results_to_db(result, 'Молоко')
+        
+        mock_category.assert_called_once()
+        mock_product.assert_called()
+    
 
 class TestBaseParser(unittest.TestCase):
 
@@ -137,7 +170,6 @@ class TestBaseParser(unittest.TestCase):
             def scrape_search(self, query):
                 return []
 
-        # ИСПРАВЛЕНИЕ 1: Убираем mock_store
         parser = ConcreteParser(mock_driver)
 
         success = parser.add_product("Test Item", Decimal("10.50"))

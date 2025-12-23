@@ -634,7 +634,7 @@ def save_results_to_db(res, query):
         res.get('magnit_single', []), "Магнит", category)
 
     stats = {
-        'created': stats_pair['created'] + stats_pyat['creates'] + stats_mag['created'],
+        'created': stats_pair['created'] + stats_pyat['created'] + stats_mag['created'],
         'updated': stats_pair['updated'] + stats_pyat['updated'] + stats_mag['updated'],
         'errors': stats_pair['errors'] + stats_pyat['errors'] + stats_mag['errors'],
         'categories_added': stats_pair['categories_added'] + stats_pyat['categories_added'] + stats_mag['categories_added']
