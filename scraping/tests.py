@@ -3,7 +3,7 @@ from decimal import Decimal
 from unittest.mock import MagicMock, patch
 from bs4 import BeautifulSoup
 from scraping.scrapers import PyaterochkaParser, MagnitParser, BaseParser, smart_compare_products
-
+from scraping.scrapers import save_results_to_db
 
 class TestPyaterochkaParser(unittest.TestCase):
 
@@ -147,7 +147,6 @@ class TestSmartCompare(unittest.TestCase):
             'magnit_single': []
         }
         
-        from scraping.scrapers import save_results_to_db
         save_results_to_db(result, 'Молоко')
         
         mock_category.assert_called_once()

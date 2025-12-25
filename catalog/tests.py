@@ -61,8 +61,7 @@ class TestCatalogViews(TestCase):
         self.client.force_login(self.user)
         
     @patch('catalog.views.threading.Thread')
-    @patch('catalog.views.smart_product_search')
-    def test_product_list_search_trigger(self, mock_search, mock_thread):
+    def test_product_list_search_trigger(self, mock_thread):
         """Проверяем, что при поиске создается категория и запускается фоновый поток парсинга"""
         
         # Настройка мока для потока
@@ -82,8 +81,7 @@ class TestCatalogViews(TestCase):
         mock_thread_instance.start.assert_called_once()
 
     @patch('catalog.views.threading.Thread')
-    @patch('catalog.views.smart_product_search')
-    def test_product_list_context(self, mock_search, mock_thread):
+    def test_product_list_context(self, mock_thread):
         """Проверка контекста страницы при поиске существующего товара"""
         
         # Мокаем поток, чтобы он не запускался реально
